@@ -363,3 +363,12 @@ nav a,nav a.current,.icon-btn,header .btn,header .tag,header .badge{border:0}
 
 /* Celular: o cartão da animação guiada sobe acima dos botões e o título some para dar espaço */
 @media (max-width:900px){.tour{bottom:72px}.hero.touring .hero-copy{display:none}}
+
+/* Celular: o texto de abertura fica acima da maquete, sem cobrir a imagem */
+@media (max-width:900px){
+  .hero-copy{position:static;order:-1;width:100%;padding:14px 16px 16px;background:var(--head);pointer-events:auto;-webkit-mask:none;mask:none}
+  .hero-copy h1{font-size:1.55rem;text-shadow:none}
+  .hero-copy p{margin:.4rem 0 .8rem;font-size:.92rem;text-shadow:none}
+  .hero-copy .cta{min-height:48px}
+  .scene{height:64svh;min-height:380px}
+}
