@@ -36,6 +36,7 @@ function App(){
   const [showZones,setShowZones]=useState(q.has('zonas'))
   const [activeFlows,setActiveFlows]=useState(q.has('fluxos')?flows.map(f=>f.id):(+q.get('etapa')>=1?tourOrder.slice(0,+q.get('etapa')):[]))
   const [zoomTick,setZoomTick]=useState(null)
+  const [tourInfo,setTourInfo]=useState(false)
   const [tour,setTour]=useState(()=>{const n=+q.get('etapa');return n>=1&&n<=5?{step:n-1,run:1,playing:false}:null}) // {step, run, playing} da animação guiada
   const tourFlows=tourOrder.map(id=>flows.find(f=>f.id===id))
   function startTour(step=0,playing=true){
@@ -151,13 +152,14 @@ function App(){
         {tour && <div className="tour" role="region" aria-label="Animação guiada dos fluxos" aria-live="polite">
           <div className="tour-top"><span className="code">Etapa {tour.step+1} de {tourOrder.length}</span><strong>{tourFlows[tour.step].name}</strong>
             <button className="tour-x" aria-label="Fechar animação" onClick={tourStop}><X size={18}/></button></div>
-          <p>{tourFlows[tour.step].note}</p>
           <div className="tour-ctl">
             <button aria-label="Etapa anterior" disabled={tour.step===0} onClick={()=>startTour(tour.step-1,false)}><SkipBack size={18}/></button>
             <button className="tour-play" onClick={()=>tour.playing?setTour(t=>({...t,playing:false,waiting:false})):(tour.end?startTour(0,true):startTour(tour.step,true))}>{tour.playing?<><Pause size={18}/>Pausar</>:<><Play size={18} fill="currentColor"/>{tour.end?'Rever':'Continuar'}</>}</button>
             <button aria-label="Próxima etapa" disabled={tour.step===tourOrder.length-1} onClick={()=>startTour(tour.step+1,false)}><SkipForward size={18}/></button>
+            <button aria-label="Descrição da etapa" aria-expanded={tourInfo} className={tourInfo?'on':''} onClick={()=>setTourInfo(v=>!v)}><Info size={18}/></button>
           </div>
-          <p className="src">Fonte: <SourceLinks text="Guia, seção 4"/>. O traçado no mapa é didático, feito pelo grupo.</p>
+          {tourInfo && <><p>{tourFlows[tour.step].note}</p>
+          <p className="src">Fonte: <SourceLinks text="Guia, seção 4"/>. O traçado no mapa é didático, feito pelo grupo.</p></>}
         </div>}
         <div className="map-tools" role="group" aria-label="Controles da maquete">
           {!view2d && <>

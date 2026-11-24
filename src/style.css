@@ -372,3 +372,12 @@ nav a,nav a.current,.icon-btn,header .btn,header .tag,header .badge{border:0}
   .hero-copy .cta{min-height:48px}
   .scene{height:64svh;min-height:380px}
 }
+
+/* Cartão da animação guiada compacto: a descrição só abre quando pedida */
+.tour{padding:10px 12px;max-width:min(400px,calc(100% - 100px))}
+.tour-top strong{font-size:1rem}
+.tour-x{width:34px;height:34px}
+.tour-ctl{margin-top:8px}
+.tour-ctl button{min-height:40px;min-width:40px;padding:0 10px}
+.tour-ctl button.on{background:var(--mint);border-color:var(--green-d)}
+@media (max-width:900px){.tour{left:12px;right:12px;max-width:none;bottom:72px}}
