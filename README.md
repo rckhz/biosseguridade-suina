@@ -1,14 +1,15 @@
 # Biosseguridade na Suinocultura
 
-Uma visita virtual a uma granja fictícia para estudar a prevenção da febre aftosa em suínos. A maquete reúne **12 setores**. Ao selecionar um deles, você descobre o que acontece ali, quais cuidados fazem parte da rotina e onde encontrar a explicação no material do grupo.
+Uma visita virtual a uma granja fictícia para estudar a prevenção da febre aftosa em suínos. A maquete reúne **12 setores**. Ao selecionar um deles, você descobre o que acontece ali, quais cuidados fazem parte da rotina e onde encontrar a explicação no material do grupo. Cada setor tem a sua própria animação na maquete e abre uma janelinha que mostra, por dentro, o processo que acontece no local.
 
-![Tela inicial do site com a maquete da granja e a ficha do setor selecionado](docs/imagens/granja.jpg)
+![Maquete da granja com a janela do interior da maternidade e a ficha do setor selecionado](docs/imagens/granja.jpg)
 
 ## Um roteiro pela granja
 
 1. Selecione **Explorar a propriedade** para começar pelo primeiro setor. Arraste a maquete para girar a câmera e use as setas **←** e **→** para passar de uma ficha à seguinte.
-2. Em um galpão, escolha **Ver por dentro**. Depois, volte à vista geral e abra a **planta 2D** para localizar o galpão em relação às outras instalações.
-3. Ative **Mostrar zonas** e **Mostrar fluxos**. Na legenda, selecione um percurso por vez para acompanhar a circulação de pessoas, animais, ração, veículos ou resíduos.
+2. Observe a janelinha do setor: na portaria a cancela sobe para o visitante registrado, na barreira sanitária a pessoa troca de roupa e toma banho, na quarentena os animais ficam em baias separadas. Em maternidade e creche, escolha **Ver por dentro** para abrir o galpão em corte, cada um com o seu modelo.
+3. Selecione o botão ▶ da maquete para ver a **animação passo a passo**: o caminhão chega, a ração segue dali, depois pessoas, animais e resíduos percorrem seus trajetos, uma etapa continuando a anterior.
+4. Abra a **planta 2D** para localizar os setores. Ative **Mostrar zonas** e **Mostrar fluxos** e, na legenda, selecione um percurso por vez para acompanhar a circulação de pessoas, animais, ração, veículos ou resíduos.
 
 ## Da visita à simulação
 
