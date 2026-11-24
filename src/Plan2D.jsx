@@ -3,7 +3,7 @@ import {sectors,zones,flows} from './sectors'
 
 // Planta 2D vista de cima (Guia, seção 9: protótipo mínimo e modo alternativo caso o 3D fique lento).
 // Usa as mesmas coordenadas [x, z] da maquete 3D.
-const FRONT=7.8, ROAD=12.5
+const FRONT=7.8, ROAD=13.63
 // Quebra nomes longos em duas linhas para não encostarem nos vizinhos.
 const lines=t=>{
   if(t.length<=11) return [t]
@@ -16,10 +16,10 @@ const lines=t=>{
 export default function Plan2D({selected,onSelect,showZones,activeFlows}){
   const shown=flows.filter(f=>activeFlows.includes(f.id))
   const key=(e,i)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onSelect(i) } }
-  return <svg className="plan2d-svg" viewBox="-13 -9.2 26 23.2" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Planta 2D da granja">
+  return <svg className="plan2d-svg" viewBox="-13 -9.2 26 25.4" preserveAspectRatio="xMidYMid meet" role="group" aria-label="Planta 2D da granja">
     <defs>{shown.map(f=><marker key={f.id} id={'seta-'+f.id} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill={f.color}/></marker>)}</defs>
     <rect x="-13" y="-9.2" width="26" height="23.2" fill="#a7b38a"/>
-    <rect x="-13" y={ROAD-1.17} width="26" height="2.35" fill="#5d625c"/>
+    <rect x="-13" y={ROAD-2.3} width="26" height="4.6" fill="#5d625c"/>
     <line x1="-13" y1={ROAD} x2="13" y2={ROAD} stroke="#f1ead0" strokeWidth=".06" strokeDasharray="1 2"/>
     <rect x="-5.4" y="-8.6" width="1.6" height="19.8" fill="#d9cdb3"/>
     <rect x="-10" y="1.25" width="20" height="1.2" fill="#d9cdb3"/>

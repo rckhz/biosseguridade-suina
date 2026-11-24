@@ -22,7 +22,7 @@ export const sectors = [
     role:'Ponto de parada para veículos de visitantes; evitar ingresso desnecessário.',
     risk:'Veículos, equipamentos, roupas e calçados contaminados.',
     measures:['Parada dos veículos de visitantes do lado de fora.', 'Evitar ingresso desnecessário.', 'Fluxo de veículos preferencialmente restrito ao perímetro e pontos de transferência.'],
-    source:'Guia, seções 3 e 4', riskSource:'Plano, seção 3', x:-8.3, z:9.7, w:2.5, d:1.4},
+    source:'Guia, seções 3 e 4', riskSource:'Plano, seção 3', x:-8.3, z:9.7, w:4.2, d:2.4},
   {name:'Controle de veículos / entrega', short:'Veículos e entrega', zone:'externa',
     role:'Registro, avaliação sanitária, higienização quando indicada; preferir transferência na borda.',
     risk:'Veículos, equipamentos, roupas e calçados contaminados.',
@@ -94,3 +94,7 @@ export const flows = [
   {id:'residuos', name:'Resíduos', note:'galpões → área de coleta identificada → destinação', color:'#b2453a', dash:false,
     paths:[[[-1.5,-5.3],[8,-5.3],[8,-6.2]]]},
 ]
+
+// Animação guiada: cada etapa continua da anterior (o caminhão estaciona e a ração segue dali).
+// A ordem é didática; os trajetos e as notas vêm do guia (seção 4).
+export const tourOrder = ['veiculos','racao','pessoas','animais','residuos']

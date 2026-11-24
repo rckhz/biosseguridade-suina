@@ -2,7 +2,7 @@
 import {Canvas, useFrame, useThree} from '@react-three/fiber'
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
 import {Html} from '@react-three/drei/web/Html.js'
-import {CanvasTexture,RepeatWrapping,SRGBColorSpace,Vector3} from 'three'
+import {CanvasTexture,RepeatWrapping,SRGBColorSpace,Vector3,Shape} from 'three'
 import {sectors,flows,zones,isBarn} from './sectors'
 import {sectorIcons} from './icons'
 import Pig from './Pig'
@@ -75,7 +75,7 @@ function Box({at,size,color,tilt=0,turn=0}) {
   return <mesh position={at} rotation={[tilt,turn,0]} castShadow receiveShadow><boxGeometry args={size}/><meshStandardMaterial color={color}/></mesh>
 }
 // Galpão em corte: sem telhado, com baias e leitões dentro da própria maquete.
-function Cutaway({w,d}) {
+function Cutaway({w,d,kind}) {
   const xs=[-1.8,-.6,.6,1.8]
   return <group>
     <Box at={[0,.1,0]} size={[w,.12,d]} color="#c9bfae"/>
@@ -85,7 +85,21 @@ function Cutaway({w,d}) {
     {[-1,1].map(side=><group key={side}>
       <Box at={[0,.42,side*.27]} size={[w,.04,.03]} color="#77857c"/>
       {[-2.4,-1.2,0,1.2,2.4].map(x=><Box key={x} at={[x,.33,side*.62]} size={[.04,.32,.68]} color="#b7b3a3"/>)}
-      {xs.map((x,k)=>[-.3,.3].map((o,j)=><group key={k+'_'+j} position={[x+o,.16,side*.62]} scale={.3}><Pig x={0} z={0} phase={k*1.7+j*2.3+side}/></group>))}
+      {kind==='maternidade'
+        ? xs.map((x,k)=><group key={k}>
+            <Box at={[x-.1,.1,side*.62]} size={[.95,.02,.62]} color="#d8cdb8"/>
+            <Box at={[x+.34,.115,side*.62]} size={[.42,.02,.5]} color="#e8b98a"/>
+            {[-.2,.2].map(o=><Box key={o} at={[x-.1,.3,side*.62+o]} size={[.7,.025,.025]} color="#57675f"/>)}
+            {[-.2,.2].map(o=>[-.34,.14].map(q=><Box key={o+'_'+q} at={[x-.1+q,.22,side*.62+o]} size={[.025,.2,.025]} color="#57675f"/>))}
+            <group position={[x-.1,.16,side*.62]} scale={.34}><Pig x={0} z={0} phase={k*1.9+side}/></group>
+            {[0,1].map(j=><group key={j} position={[x+.32+j*.12,.13,side*.62+(j?.1:-.1)]} scale={.15}><Pig x={0} z={0} phase={k*1.3+j*2.2+side}/></group>)}
+            <mesh position={[x+.34,.5,side*.62]}><coneGeometry args={[.09,.08,10]}/><meshStandardMaterial color="#8a8f8c"/></mesh>
+            <mesh position={[x+.34,.44,side*.62]}><sphereGeometry args={[.045,8,8]}/><meshBasicMaterial color="#ffb35c" toneMapped={false}/></mesh>
+          </group>)
+        : xs.map((x,k)=><group key={k}>
+            <Box at={[x,.2,side*.38]} size={[.8,.09,.1]} color="#8b8f8c"/>
+            {[-.3,.3].map((o,j)=><group key={j} position={[x+o,.16,side*.68]} scale={.3}><Pig x={0} z={0} phase={k*1.7+j*2.3+side}/></group>)}
+          </group>)}
     </group>)}
   </group>
 }
@@ -102,29 +116,228 @@ function Tracker({target,onAnchor}){
   })
   return null
 }
+// ===== Animações por setor: cada setor selecionado ganha a sua própria cena =====
+function useTick(){
+  const {invalidate}=useThree()
+  const t=useRef(0)
+  useFrame((_,dt)=>{t.current+=Math.min(dt,.05);invalidate()})
+  return t
+}
+// Gotas ou grãos que caem em laço.
+function Drops({n=8,color,at,h=1.2,spread=.2,size=.05,speed=.7}){
+  const t=useTick(),refs=useRef([])
+  useFrame(()=>{refs.current.forEach((m,i)=>{
+    if(!m) return
+    const k=(t.current*speed+i/n)%1
+    m.position.y=at[1]-k*h
+    m.scale.setScalar(k>.93?.01:1)
+  })})
+  return <group position={[at[0],0,at[2]]}>{Array.from({length:n},(_,i)=>
+    <mesh key={i} ref={m=>{refs.current[i]=m}} position={[Math.sin(i*2.4)*spread,at[1],Math.cos(i*1.7)*spread]}><sphereGeometry args={[size,8,6]}/><meshBasicMaterial color={color} toneMapped={false}/></mesh>)}</group>
+}
+// Ondas que se abrem no chão.
+function Ripple({at,color,max=1.4,period=2.2}){
+  const t=useTick(),a=useRef(),b=useRef()
+  useFrame(()=>{[a,b].forEach((r,i)=>{
+    const k=(t.current/period+i*.5)%1
+    r.current.scale.setScalar(.25+k*max)
+    r.current.material.opacity=.85*(1-k)
+  })})
+  return <group position={at}>{[a,b].map((r,i)=>
+    <mesh key={i} ref={r} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.9,1,44]}/><meshBasicMaterial color={color} transparent toneMapped={false}/></mesh>)}</group>
+}
+function Blink({at,color='#ff6a4d',rate=3}){
+  const t=useTick(),r=useRef()
+  useFrame(()=>{r.current.visible=Math.floor(t.current*rate)%2===0})
+  return <mesh ref={r} position={at}><sphereGeometry args={[.09,10,8]}/><meshBasicMaterial color={color} toneMapped={false}/></mesh>
+}
+function Person({at}){
+  return <group position={at}><mesh position={[0,.42,0]} castShadow><capsuleGeometry args={[.17,.4,4,10]}/><meshStandardMaterial color="#f4f1ea"/></mesh><mesh position={[0,.92,0]}><sphereGeometry args={[.15,12,10]}/><meshStandardMaterial color="#e8b99a"/></mesh></group>
+}
+// 1 Portaria: a cancela sobe e desce, com sinal piscando.
+function Boom({d}){
+  const arm=useRef(),t=useTick()
+  useFrame(()=>{
+    const c=(t.current%5)/5
+    const lift=c<.15?c/.15:c<.55?1:c<.7?1-(c-.55)/.15:0
+    arm.current.rotation.z=-lift*1.15
+  })
+  return <group position={[.95,0,d/2+.55]}>
+    <Box at={[0,.35,0]} size={[.14,.7,.14]} color="#6c7572"/>
+    <Blink at={[0,.78,0]}/>
+    <group ref={arm} position={[0,.62,0]}>{[0,1,2,3].map(k=><Box key={k} at={[-.2-k*.4,0,0]} size={[.4,.07,.07]} color={k%2?'#f6f3ea':'#d9483b'}/>)}</group>
+  </group>
+}
+// 2 Estacionamento: um carro de visita passa na via, para do lado de fora e segue.
+function PassCar(){
+  const ref=useRef(),hz=useRef(),t=useTick()
+  useFrame(()=>{
+    const c=(t.current%9)/9
+    const x=c<.45?-9+(c/.45)*11.6:c<.7?2.6:2.6+((c-.7)/.3)*6.4
+    ref.current.position.x=x
+    hz.current.visible=c>=.45&&c<.7&&Math.floor(t.current*3)%2===0
+  })
+  return <group ref={ref} position={[-9,0,2.9]}>
+    <Box at={[0,.3,0]} size={[1.0,.3,.52]} color="#a3546a"/>
+    <Box at={[-.08,.54,0]} size={[.5,.24,.46]} color="#b8d6de"/>
+    {[-.32,.32].map(x=>[-.27,.27].map(z=><mesh key={x+'_'+z} position={[x,.14,z]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.13,.13,.08,10]}/><meshStandardMaterial color="#2c3030"/></mesh>))}
+    <group ref={hz}>{[-.2,.2].map(z=><mesh key={z} position={[-.52,.34,z]}><sphereGeometry args={[.06,8,8]}/><meshBasicMaterial color="#ffb35c" toneMapped={false}/></mesh>)}</group>
+  </group>
+}
+// 3 Entrega: caixas passam do caminhão para o ponto de recebimento.
+function Crates(){
+  const t=useTick(),refs=useRef([])
+  useFrame(()=>{refs.current.forEach((m,i)=>{
+    const k=(t.current*.3+i/4)%1
+    m.position.set(-.6+.6*k,.3+Math.sin(k*Math.PI)*.8,2.6-1.8*k)
+    m.rotation.y=k*3
+  })})
+  return <group>{[0,1,2,3].map(i=><mesh key={i} ref={m=>{refs.current[i]=m}} castShadow><boxGeometry args={[.32,.28,.32]}/><meshStandardMaterial color="#c9a45c"/></mesh>)}</group>
+}
+// 4 Recepção: visitante chega ao balcão, é registrado (anel verde) e sai.
+function Visitor({d}){
+  const ref=useRef(),t=useTick()
+  useFrame(()=>{
+    const c=(t.current%9)/9
+    const k=c<.35?c/.35:c<.65?1:1-(c-.65)/.35
+    ref.current.position.set(2.2*(1-k),0,d/2+.35+1.5*(1-k))
+  })
+  return <group><group ref={ref}><Person at={[0,0,0]}/></group><Ripple at={[0,.2,d/2+.35]} color="#2f7d62" max={1.1} period={1.8}/></group>
+}
+// 5 Barreira sanitária: banho com gotas e ondas na entrada.
+function Shower({d}){
+  return <group><Drops n={12} color="#7fb8e8" at={[0,1.6,d/2+.45]} h={1.45} spread={.4}/><Ripple at={[0,.2,d/2+.45]} color="#7fb8e8" max={1}/></group>
+}
+// 6 Quarentena: ondas de isolamento e sinal piscando.
+function Isolation({w,d}){
+  return <group><Ripple at={[0,.2,0]} color="#e7b93c" max={Math.max(w,d)*1.15} period={2.6}/><Blink at={[0,2.0,0]} color="#e7b93c" rate={2}/></group>
+}
+// 7 Maternidade: luz de aquecimento pulsando sobre o galpão.
+function Warm({w,d}){
+  const t=useTick(),a=useRef(),b=useRef()
+  useFrame(()=>{[a,b].forEach((r,i)=>{const p=.5+.5*Math.sin(t.current*2.2+i*1.6);r.current.scale.setScalar(.75+.45*p);r.current.material.opacity=.45+.4*p})})
+  return <group>{[a,b].map((r,i)=><mesh key={i} ref={r} position={[(i?1:-1)*w*.3,1.45+.1*d+.55,0]}><sphereGeometry args={[.32,16,12]}/><meshBasicMaterial color="#ffb35c" transparent toneMapped={false}/></mesh>)}<Ripple at={[0,.2,0]} color="#ffb35c" max={Math.max(w,d)*1.1} period={3}/></group>
+}
+// 8 Creche: exaustores giram e a ração cai do silo.
+function Fans({w}){
+  const t=useTick(),refs=useRef([])
+  useFrame(()=>{refs.current.forEach(g=>{if(g) g.rotation.x=t.current*7})})
+  return <group>{[-1,1].map((k,i)=><group key={k} ref={g=>{refs.current[i]=g}} position={[k*(w/2+.12),.8,0]}>
+    <Box at={[0,0,0]} size={[.02,.5,.07]} color="#e9e4d6"/><Box at={[0,0,0]} size={[.02,.07,.5]} color="#e9e4d6"/></group>)}
+    <Drops n={9} color="#d8b25a" at={[w/2+.65,1.25,-.4]} h={1.15} spread={.05} speed={.9}/></group>
+}
+// 9 Depósito: ração desce dos silos.
+function Grain(){
+  return <group>{[-.75,.75].map(x=><Drops key={x} n={9} color="#d8b25a" at={[x,1.0,-1.1]} h={.9} spread={.06} speed={.8}/>)}</group>
+}
+// 10 Reservatório: água cai do tanque e abre ondas no chão.
+function Water({}){
+  return <group><Drops n={10} color="#7fb8e8" at={[0,.55,.95]} h={.5} spread={.07} speed={.9} size={.045}/><Ripple at={[0,.2,.95]} color="#7fb8e8" max={.9} period={1.4}/></group>
+}
+// 11 Resíduos: saco vai do galpão à lixeira, com alerta vermelho.
+function Waste({w}){
+  const t=useTick(),r=useRef()
+  useFrame(()=>{const k=(t.current*.45)%1;r.current.position.set(-.2+(w/2+.75)*k,.7+Math.sin(k*Math.PI)*.8,.2);r.current.scale.setScalar(k>.95?.01:1)})
+  return <group><mesh ref={r} castShadow><sphereGeometry args={[.15,10,8]}/><meshStandardMaterial color="#2d3030"/></mesh><Ripple at={[0,.2,0]} color="#b2453a" max={2} period={2.4}/></group>
+}
+// 12 Registros: folhas sobem do prédio e somem.
+function Sheets(){
+  const t=useTick(),refs=useRef([])
+  useFrame(()=>{refs.current.forEach((m,i)=>{
+    if(!m) return
+    const k=(t.current*.3+i/4)%1
+    m.position.set(Math.sin(i*2.1)*.35,1.7+k*1.2,Math.cos(i*1.3)*.2)
+    m.rotation.set(k*2,k*3+i,0)
+    m.material.opacity=1-k
+  })})
+  return <group>{[0,1,2,3].map(i=><mesh key={i} ref={m=>{refs.current[i]=m}}><boxGeometry args={[.34,.015,.26]}/><meshBasicMaterial color="#ffffff" transparent toneMapped={false}/></mesh>)}</group>
+}
+function SectorFx({i,s}){
+  const {w,d}=s
+  return [
+    <Boom d={d}/>,<PassCar/>,<Crates/>,<Visitor d={d}/>,<Shower d={d}/>,<Isolation w={w} d={d}/>,
+    <Warm w={w} d={d}/>,<Fans w={w}/>,<Grain/>,<Water/>,<Waste w={w}/>,<Sheets/>,
+  ][i]||null
+}
 function Building({s,i,selected,onSelect,portal,showZones,cut,hide}) {
   const {w,d}=s
-  const roof = [8,2,10].includes(i) ? '#899595' : '#9a5b48'
+  const roof = [8,2,10].includes(i) ? '#899595' : i===6 ? '#c4764f' : i===7 ? '#5f7482' : '#9a5b48'
   const pad = showZones ? (s.zone ? zones[s.zone].color : '#d9d6cc') : selected ? '#e7b7c4' : '#ccc5a9'
   const Icon = sectorIcons[i]
   if(hide) return <group position={[s.x,0,s.z]}><Box at={[0,.075,0]} size={[w+.45,.15,d+.45]} color={pad}/></group>
   return <group position={[s.x,0,s.z]} onClick={e=>{e.stopPropagation(); if(e.delta<5) onSelect(i)}}>
     <Box at={[0,.075,0]} size={[w+(showZones?.9:.45),.15,d+(showZones?.9:.45)]} color={pad}/>
     {selected && <Box at={[0,.04,0]} size={[w+1.3,.08,d+1.3]} color="#f3dbe2"/>}
+    {selected && !cut && <SectorFx i={i} s={s}/>}
     <Html portal={portal} position={[0,2.5,0]} center zIndexRange={[5,1]}>
       <button className={'pin'+(selected?' active':'')} aria-label={s.name} aria-pressed={selected} onClick={()=>onSelect(i)}>
         <b><Icon size={19} strokeWidth={2.2}/></b>{selected && <span>{s.short}</span>}
       </button>
     </Html>
-    {i===8 && [-.75,.75].map(x=><group key={x} position={[x,0,-1.8]}><mesh position={[0,1.22,0]} castShadow><cylinderGeometry args={[.6,.6,2.4,24]}/><meshStandardMaterial color="#c3ccc8" metalness={.5} roughness={.35}/></mesh><mesh position={[0,2.64,0]}><coneGeometry args={[.64,.48,24]}/><meshStandardMaterial color="#95a3a0" metalness={.4}/></mesh></group>)}
-    {i===9 ? <><mesh position={[0,1.3,0]} castShadow><cylinderGeometry args={[.84,.84,1.5,32]}/><meshStandardMaterial color="#709695"/></mesh>{[[-.55,-.4],[.55,-.4],[-.55,.4],[.55,.4]].map(([x,z],k)=><Box key={k} at={[x,.3,z]} size={[.1,.6,.1]} color="#59686a"/>)}</>
-      : i===1 ? <>{[-.7,.4].map(n=><Box key={n} at={[n,.32,0]} size={[.48,.36,1.1]} color="#62777c"/>)}</>
+    {i===8 && [-.75,.75].map(x=><group key={x} position={[x,0,-1.8]}>
+      <mesh position={[0,.08,0]}><cylinderGeometry args={[.68,.7,.16,24]}/><meshStandardMaterial color="#9d9a90"/></mesh>
+      <mesh position={[0,1.22,0]} castShadow><cylinderGeometry args={[.6,.6,2.3,28]}/><meshStandardMaterial color="#cdd5d1" metalness={.55} roughness={.3}/></mesh>
+      {[.55,1.05,1.55,2.05].map(y=><mesh key={y} position={[0,y+.1,0]}><cylinderGeometry args={[.615,.615,.045,28]}/><meshStandardMaterial color="#a9b4b0" metalness={.5} roughness={.4}/></mesh>)}
+      <mesh position={[0,2.5,0]} castShadow><sphereGeometry args={[.6,24,10,0,Math.PI*2,0,Math.PI/2]}/><meshStandardMaterial color="#98a7a3" metalness={.45} roughness={.35}/></mesh>
+      <mesh position={[0,3.02,0]}><cylinderGeometry args={[.1,.12,.12,12]}/><meshStandardMaterial color="#6e7c78"/></mesh>
+      <Box at={[.1,1.2,.63]} size={[.05,2.3,.05]} color="#6e7c78"/><Box at={[.28,1.2,.58]} size={[.05,2.3,.05]} color="#6e7c78"/>
+      {[.3,.6,.9,1.2,1.5,1.8,2.1].map(y=><Box key={y} at={[.19,y,.6]} size={[.2,.03,.04]} color="#6e7c78"/>)}
+    </group>)}
+    {i===10 && <group position={[w/2+.55,0,.2]}><Box at={[0,.32,0]} size={[.6,.64,.6]} color="#6d7673"/><Box at={[0,.67,0]} size={[.68,.06,.68]} color="#4f5755"/></group>}
+    {i===9 ? <><mesh position={[0,1.3,0]} castShadow><cylinderGeometry args={[.84,.84,1.5,32]}/><meshStandardMaterial color="#709695" metalness={.3} roughness={.45}/></mesh>
+        {[.8,1.3,1.8].map(y=><mesh key={y} position={[0,y,0]}><cylinderGeometry args={[.855,.855,.05,32]}/><meshStandardMaterial color="#56797a"/></mesh>)}
+        <mesh position={[0,2.2,0]} castShadow><coneGeometry args={[.9,.5,32]}/><meshStandardMaterial color="#5c7b7c"/></mesh>
+        <mesh position={[0,.58,0]}><cylinderGeometry args={[.78,.78,.1,24]}/><meshStandardMaterial color="#59686a"/></mesh>
+        {[[-.55,-.4],[.55,-.4],[-.55,.4],[.55,.4]].map(([x,z],k)=><Box key={k} at={[x,.3,z]} size={[.1,.6,.1]} color="#59686a"/>)}
+        <Box at={[0,.2,0]} size={[1.2,.04,.04]} color="#59686a" turn={.78}/><Box at={[0,.2,0]} size={[1.2,.04,.04]} color="#59686a" turn={-.78}/></>
+      : i===1 ? <>{[[-.62,'#e8ecea'],[.62,'#d9c290']].map(([z,c],k)=><group key={k} position={[-.4+k*.15,.12,z]} scale={.72}><Truck at={[0,0,0]} color={c}/></group>)}</>
       : i===4 ? <><Box at={[0,.6,0]} size={[w,1,d]} color="#ece8df"/><Box at={[0,1.15,0]} size={[w+.4,.1,d+.4]} color="#d9dcd8"/>{[-1,1].map(k=><Box key={k} at={[k*.5,.17,d/2+.5]} size={[.8,.04,.7]} color="#e7b93c"/>)}</>
-      : cut ? <Cutaway w={w} d={d}/>
+      : cut ? <Cutaway w={w} d={d} kind={i===6?'maternidade':'creche'}/>
       : <><Box at={[0,.7,0]} size={[w,1.2,d]} color="#ece8df"/>
+        <Box at={[0,.27,0]} size={[w+.06,.24,d+.06]} color="#b9b4a6"/>
+        {[-1,1].map(k=><Gable key={k} x={k*(w/2-.02)} d={d}/>)}
         {[-1,1].map(sign=><Box key={sign} at={[0,1.45,sign*d*.28]} size={[w+.32,.12,d*.64]} tilt={sign*.32} color={roof}/>)}
-        {Array.from({length: Math.ceil(w/1.25)},(_,j)=><Box key={j} at={[-w/2+.45+j*1.12,.8,d/2+.02]} size={[.46,.41,.05]} color="#516c64"/>)}
+        <Box at={[0,1.45+.1*d+.03,0]} size={[w+.36,.07,.2]} color="#6f4636"/>
+        <Box at={[0,1.45+.1*d+.14,0]} size={[Math.max(.8,w*.35),.16,.34]} color="#d8d3c6"/>
+        {i===7
+          ? <><Box at={[0,.78,d/2+.03]} size={[w-.4,.5,.05]} color="#7fa58e"/>{Array.from({length:Math.floor(w/.5)},(_,j)=><Box key={j} at={[-w/2+.45+j*.5,.78,d/2+.06]} size={[.025,.5,.02]} color="#5f8573"/>)}</>
+          : Array.from({length: Math.ceil(w/1.25)},(_,j)=>({j,x:-w/2+.45+j*1.12})).filter(o=>Math.abs(o.x)>.75).map(({j,x})=><group key={j}><Box at={[x,.8,d/2+.02]} size={[.46,.41,.05]} color="#516c64"/><Box at={[x,.8,d/2+.045]} size={[.5,.045,.04]} color="#f6f3ea"/></group>)}
+        {i===6 && [-1,1].map(k=><Box key={k} at={[k*w*.3,1.45+.1*d+.07,0]} size={[.7,.12,.28]} color="#e6c9a8"/>)}
+        {i===7 && <>
+          {[-1,1].map(k=><group key={k}><mesh position={[k*(w/2+.04),.8,0]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.3,.3,.07,18]}/><meshStandardMaterial color="#8d9996"/></mesh><mesh position={[k*(w/2+.09),.8,0]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.22,.22,.02,18]}/><meshStandardMaterial color="#3d4543"/></mesh></group>)}
+          <group position={[w/2+.65,0,-.4]}><mesh position={[0,.55,0]} castShadow><cylinderGeometry args={[.28,.28,1.1,16]}/><meshStandardMaterial color="#c3ccc8" metalness={.5} roughness={.35}/></mesh><mesh position={[0,1.28,0]}><coneGeometry args={[.32,.36,16]}/><meshStandardMaterial color="#95a3a0"/></mesh></group>
+        </>}
+        <Box at={[0,.62,d/2+.03]} size={[1.15,.9,.06]} color="#7b5a45"/>
+        <Box at={[0,.62,d/2+.065]} size={[.04,.9,.03]} color="#4e3a2d"/>
+        <Box at={[0,1.1,d/2+.045]} size={[1.3,.07,.05]} color="#f6f3ea"/>
       </>}
+  </group>
+}
+// Oitão triangular do galpão (parede das pontas, sob o telhado).
+function Gable({x,d}){
+  const h=.18+.1*d
+  const shape=new Shape()
+  shape.moveTo(-d/2,0); shape.lineTo(d/2,0); shape.lineTo(0,h); shape.closePath()
+  return <mesh position={[x,1.25,0]} rotation={[0,Math.PI/2,0]} castShadow><extrudeGeometry args={[shape,{depth:.05,bevelEnabled:false}]}/><meshStandardMaterial color="#e4dfd2"/></mesh>
+}
+function Tree({at,i}){
+  const c=i%3===0?'#6e8a4c':i%2?'#58764a':'#46633f'
+  const r=1.0+(i%3)*.12
+  return <group position={at}>
+    <Box at={[0,.65,0]} size={[.22,1.3,.22]} color="#816948"/>
+    <mesh position={[0,1.6,0]} scale={[1,1.1,1]} castShadow><icosahedronGeometry args={[r,1]}/><meshStandardMaterial flatShading color={c}/></mesh>
+    <mesh position={[.28,2.15,.12]} castShadow><icosahedronGeometry args={[r*.68,1]}/><meshStandardMaterial flatShading color={c}/></mesh>
+    <mesh position={[-.34,1.95,-.15]} castShadow><icosahedronGeometry args={[r*.55,1]}/><meshStandardMaterial flatShading color="#7a9a58"/></mesh>
+  </group>
+}
+function Bush({at,s=1}){
+  return <group position={at} scale={s}><mesh position={[0,.28,0]} scale={[1.2,.8,1]} castShadow><icosahedronGeometry args={[.42,1]}/><meshStandardMaterial flatShading color="#5b7d47"/></mesh><mesh position={[.34,.22,.1]} castShadow><icosahedronGeometry args={[.3,1]}/><meshStandardMaterial flatShading color="#6a8c50"/></mesh></group>
+}
+// Portão da entrada: dois pilares e uma travessa.
+function Gate({x}){
+  return <group position={[x,0,7.8]}>
+    {[-1.6,1.6].map(k=><group key={k}><Box at={[k,.6,0]} size={[.22,1.2,.22]} color="#b9b4a6"/><Box at={[k,1.24,0]} size={[.3,.08,.3]} color="#8f8a7d"/></group>)}
+    <Box at={[0,1.0,0]} size={[3.2,.1,.1]} color="#f6f3ea"/>
   </group>
 }
 function pasture(){
@@ -151,12 +364,68 @@ function Fence({at,length,turn=0}){
 function Truck({at,turn=0,color='#e8ecea'}){
   return <group position={at} rotation={[0,turn,0]}>
     <Box at={[0,.75,0]} size={[2.6,1.2,1.15]} color={color}/>
+    <Box at={[0,.4,0]} size={[2.64,.12,1.19]} color="#5a615f"/>
+    <Box at={[0,1.0,.585]} size={[2.6,.1,.02]} color="#a3546a"/><Box at={[0,1.0,-.585]} size={[2.6,.1,.02]} color="#a3546a"/>
     <Box at={[1.75,.62,0]} size={[.95,.95,1.1]} color="#3f6b78"/>
-    {[-.9,.9,1.8].map(x=>[-.6,.6].map(z=><mesh key={x+'_'+z} position={[x,.25,z]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.25,.25,.14,14]}/><meshStandardMaterial color="#2c3030"/></mesh>))}
+    <Box at={[1.78,.98,0]} size={[.62,.34,1.12]} color="#b8d6de"/>
+    <Box at={[2.24,.45,0]} size={[.06,.3,.8]} color="#2c3030"/>
+    <Box at={[2.26,.2,0]} size={[.1,.1,1.15]} color="#8a918f"/>
+    {[-.3,.3].map(z=><Box key={z} at={[2.23,.62,z*1.4]} size={[.04,.1,.14]} color="#ffe9a8"/>)}
+    {[-.9,.9,1.8].map(x=>[-.6,.6].map(z=><group key={x+'_'+z} position={[x,.25,z]} rotation={[Math.PI/2,0,0]}><mesh><cylinderGeometry args={[.25,.25,.14,14]}/><meshStandardMaterial color="#2c3030"/></mesh><mesh position={[0,z>0?.08:-.08,0]}><cylinderGeometry args={[.11,.11,.03,10]}/><meshStandardMaterial color="#b9c0be"/></mesh></group>))}
   </group>
 }
+// Caminhão que chega pela estrada e estaciona perto da entrega. Roda de novo ao abrir "Entrega"
+// e como primeira etapa da animação guiada.
+const PARK=6.4
+function ArrivingTruck({play,parked,onDone}){
+  const ref=useRef(),t=useRef(0),done=useRef(onDone)
+  const {invalidate}=useThree()
+  done.current=onDone
+  const place=()=>{
+    const e=1-Math.pow(1-t.current,3)
+    ref.current.position.x=-32+(PARK+32)*e
+    ref.current.position.y=t.current>=1?0:Math.sin(t.current*80)*.012*(1-e)
+  }
+  useEffect(()=>{t.current=parked?1:0;place();invalidate()},[play,parked,invalidate])
+  useFrame((_,dt)=>{
+    if(!ref.current||t.current>=1) return
+    t.current=Math.min(1,t.current+Math.min(dt,.05)/7)
+    place()
+    if(t.current>=1&&done.current) done.current()
+    invalidate()
+  })
+  return <group ref={ref} position={[-32,0,12.4]}><Truck at={[0,0,0]}/></group>
+}
+// Carga ou pessoa que percorre o trajeto do fluxo da etapa atual e para no fim.
+function Walker({pts,color,kind,onDone}){
+  const ref=useRef(),d=useRef(0),done=useRef(onDone),fired=useRef(false)
+  const {invalidate}=useThree()
+  done.current=onDone
+  const segs=pts.slice(1).map((p,i)=>({a:pts[i],len:Math.hypot(p[0]-pts[i][0],p[1]-pts[i][1]),b:p}))
+  const total=segs.reduce((n,s)=>n+s.len,0)
+  useFrame((_,dt)=>{
+    if(!ref.current) return
+    if(d.current<total) d.current=Math.min(total,d.current+Math.min(dt,.05)*3.4)
+    let left=d.current,sg=segs[segs.length-1],k=1
+    for(const s of segs){ if(left<=s.len){sg=s;k=s.len?left/s.len:1;break} left-=s.len }
+    ref.current.position.set(sg.a[0]+(sg.b[0]-sg.a[0])*k,0,sg.a[1]+(sg.b[1]-sg.a[1])*k)
+    ref.current.rotation.y=Math.atan2(-(sg.b[1]-sg.a[1]),sg.b[0]-sg.a[0])
+    ref.current.children[0].position.y=Math.abs(Math.sin(d.current*5))*.05*(d.current<total?1:0)
+    if(d.current>=total&&!fired.current){fired.current=true;done.current&&done.current()}
+    else if(d.current<total) invalidate()
+  })
+  const body=kind==='pessoas'
+    ? <><mesh position={[0,.42,0]} castShadow><capsuleGeometry args={[.17,.4,4,10]}/><meshStandardMaterial color="#f4f1ea"/></mesh><mesh position={[0,.92,0]} castShadow><sphereGeometry args={[.15,12,10]}/><meshStandardMaterial color="#e8b99a"/></mesh></>
+    : kind==='animais'
+    ? <><mesh position={[0,.34,0]} scale={[1.3,.8,.8]} castShadow><sphereGeometry args={[.38,14,10]}/><meshStandardMaterial color="#f2c4af"/></mesh><mesh position={[.4,.38,0]} castShadow><sphereGeometry args={[.2,12,10]}/><meshStandardMaterial color="#eeaf99"/></mesh></>
+    : <Box at={[0,.4,0]} size={[.6,.5,.6]} color={kind==='residuos'?'#8a8f8c':'#c9a45c'}/>
+  return <group ref={ref} position={[pts[0][0],0,pts[0][1]]}><group>
+    {body}
+    <mesh position={[0,.03,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.5,.68,28]}/><meshBasicMaterial color={color} toneMapped={false} transparent opacity={.85}/></mesh>
+  </group></group>
+}
 function Lamp({at}){
-  return <group position={at}><Box at={[0,.9,0]} size={[.07,1.8,.07]} color="#58625f"/><mesh position={[0,1.85,0]}><sphereGeometry args={[.16,12,10]}/><meshBasicMaterial color="#ffe9a8"/></mesh></group>
+  return <group position={at}><Box at={[0,.9,0]} size={[.07,1.8,.07]} color="#58625f"/><Box at={[0,.07,0]} size={[.22,.14,.22]} color="#6c7572"/><Box at={[.1,1.82,0]} size={[.3,.05,.05]} color="#58625f"/><mesh position={[.22,1.78,0]}><sphereGeometry args={[.14,12,10]}/><meshBasicMaterial color="#ffe9a8"/></mesh></group>
 }
 // Fluxo: faixa no chão (contínua ou tracejada) com ponta de seta.
 function Flow({paths,color,dash}){
@@ -176,7 +445,8 @@ function Path({pts,color,dash}){
   const e=pts[pts.length-1], p=pts[pts.length-2], turn=Math.atan2(-(e[1]-p[1]),e[0]-p[0])
   return <group>{parts}<group position={[e[0],y+.02,e[1]]} rotation={[0,turn,0]}><mesh rotation={[0,0,-Math.PI/2]}><coneGeometry args={[.36,.7,3]}/><meshBasicMaterial color={color} toneMapped={false}/></mesh></group></group>
 }
-export default function Farm({selected,onSelect,reset,showZones,activeFlows,near,inset,onAnchor,zoomTick,panelOpen}) {
+export default function Farm({selected,onSelect,reset,showZones,activeFlows,near,inset,onAnchor,zoomTick,panelOpen,tour,onTourDone}) {
+  const tourFlow=tour&&tour.flow
   const portal=useRef(null)
   const cutting=near&&isBarn(selected)
   const sel=sectors[selected]
@@ -186,10 +456,11 @@ export default function Farm({selected,onSelect,reset,showZones,activeFlows,near
     <hemisphereLight args={['#fff6e2','#7d8c55',1.6]}/><directionalLight position={[4,15,8]} intensity={2.4} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-left={-15} shadow-camera-right={15} shadow-camera-top={15} shadow-camera-bottom={-15}/>
     <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[180,180]}/><meshStandardMaterial map={grass}/></mesh>
     <Fence at={[0,0,-8]} length={21}/><Fence at={[10.5,0,0]} length={16} turn={Math.PI/2}/><Fence at={[-10.5,0,0]} length={16} turn={Math.PI/2}/><Fence at={[3.75,0,7.8]} length={13.5}/><Fence at={[-8.35,0,7.8]} length={4.3}/>
-    <Box at={[0,.025,12.5]} size={[100,.04,2.35]} color="#5d625c"/>
-    {Array.from({length:26},(_,i)=><Box key={i} at={[(i-13)*3,.053,12.5]} size={[1,.015,.06]} color="#f1ead0"/>)}
+    <Box at={[0,.025,13.63]} size={[100,.04,4.6]} color="#5d625c"/>
+    {Array.from({length:26},(_,i)=><Box key={i} at={[(i-13)*3,.053,13.63]} size={[1,.015,.06]} color="#f1ead0"/>)}
     <Box at={[0,.06,1.85]} size={[20,.06,1.2]} color="#d9cdb3"/><Box at={[-4.6,.06,1.3]} size={[1.6,.07,19.8]} color="#d9cdb3"/>
-    <Truck at={[-13.5,0,12.1]}/><Truck at={[11,0,12.9]} turn={Math.PI} color="#d9c290"/>
+    <ArrivingTruck play={tour?'t'+tour.run:selected===2?'e':'i'} parked={!!tour&&tour.step>0} onDone={tour&&tour.step===0?onTourDone:null}/>
+    {tour&&tour.step>0&&<Walker key={tour.run} pts={tourFlow.paths[0]} color={tourFlow.color} kind={tourFlow.id} onDone={onTourDone}/>}
     {[-2,1.5,5,8.5].map(x=><Lamp key={x} at={[x,0,2.9]}/>)}
     {sectors.map((s,i)=>{
       const dz=sel?s.z-sel.z:0, dx=sel?s.x-sel.x:0
@@ -197,6 +468,8 @@ export default function Farm({selected,onSelect,reset,showZones,activeFlows,near
         cut={cutting&&selected===i} hide={cutting&&i!==selected&&dz>0&&Math.abs(dx-.45*dz)<3.2}/>
     })}
     {flows.filter(f=>activeFlows.includes(f.id)).map(f=><Flow key={f.id} {...f}/>)}
-    {[[-9.3,-6.2],[0,-7],[2,-7],[4,-7],[9.2,5.4],[-1,6.8],...Array.from({length:40},(_,i)=>[(i%20-10)*2.4,-11-Math.floor(i/20)*3+Math.sin(i)])].map(([x,z],i)=><group key={i} position={[x,0,z]}><Box at={[0,.65,0]} size={[.22,1.3,.22]} color="#816948"/><mesh position={[0,1.7,0]} scale={[1,1.2,1]} castShadow><icosahedronGeometry args={[1.05+(i%3)*.12,1]}/><meshStandardMaterial flatShading color={i%3===0?'#6e8a4c':i%2?'#58764a':'#46633f'}/></mesh></group>)}
+    {[[-9.3,-6.2],[0,-7],[2,-7],[4,-7],[9.2,5.4],[-1,6.8],...Array.from({length:40},(_,i)=>[(i%20-10)*2.4,-11-Math.floor(i/20)*3+Math.sin(i)])].map(([x,z],i)=><Tree key={i} at={[x,0,z]} i={i}/>)}
+    {[[-10.9,-7],[-10.9,-3],[10.9,-4.5],[10.9,2.5],[-6.8,8.6],[5.5,8.7],[9.6,8.7],[-2.4,-8.9],[3.2,-8.9],[8.4,-8.9]].map(([x,z],i)=><Bush key={i} at={[x,0,z]} s={.9+(i%3)*.18}/>)}
+    <Gate x={-4.6}/>
   </Canvas></div>
 }

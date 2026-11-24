@@ -1,13 +1,14 @@
 ﻿import React,{useEffect,useRef,useState} from 'react'
 import {createRoot} from 'react-dom/client'
 import '@fontsource-variable/nunito'
-import {House,Search,CircleHelp,Play,Plus,Minus,Move,X,Info,ArrowRight,CircleCheck,MapPin,Shield,Virus,GraduationCap,Layers,Route,Menu,ChevronLeft,ChevronRight,PiggyBank,ZoomIn,Map as MapIcon,Box as BoxIcon,Target} from 'lucide-react'
+import {House,Search,CircleHelp,Play,Plus,Minus,Move,X,Info,ArrowRight,CircleCheck,MapPin,Shield,Virus,GraduationCap,Layers,Route,Menu,ChevronLeft,ChevronRight,PiggyBank,ZoomIn,Map as MapIcon,Box as BoxIcon,Target,Pause,SkipForward,SkipBack} from 'lucide-react'
 import Farm from './Farm'
 import Plan2D from './Plan2D'
 import {objective} from './content'
 import {SourceLinks} from './Sources'
 import BarnInterior from './BarnInterior'
-import {sectors,zones,flows,flowLegend,isBarn} from './sectors'
+import Interior from './Interiors'
+import {sectors,zones,flows,flowLegend,isBarn,tourOrder} from './sectors'
 import {sectorIcons} from './icons'
 import {Disease,Practices,Materials,Simulation,Quiz,Refs} from './Learn'
 import './style.css'
@@ -33,15 +34,32 @@ function App(){
   const [inset,setInset]=useState(true)
   const [view2d,setView2d]=useState(q.has('2d'))
   const [showZones,setShowZones]=useState(q.has('zonas'))
-  const [activeFlows,setActiveFlows]=useState(q.has('fluxos')?flows.map(f=>f.id):[])
+  const [activeFlows,setActiveFlows]=useState(q.has('fluxos')?flows.map(f=>f.id):(+q.get('etapa')>=1?tourOrder.slice(0,+q.get('etapa')):[]))
   const [zoomTick,setZoomTick]=useState(null)
+  const [tour,setTour]=useState(()=>{const n=+q.get('etapa');return n>=1&&n<=5?{step:n-1,run:1,playing:false}:null}) // {step, run, playing} da animação guiada
+  const tourFlows=tourOrder.map(id=>flows.find(f=>f.id===id))
+  function startTour(step=0,playing=true){
+    setNear(false);setInset(false);setView2d(false)
+    if(!tour){select(-1);setReset(v=>v+1)}
+    setTour(t=>({step,run:(t?t.run:0)+1,playing}))
+    setActiveFlows(tourOrder.slice(0,step+1))
+  }
+  function tourStop(){setTour(null);setActiveFlows([])}
+  function tourDone(){
+    setTour(t=>t&&t.playing?{...t,waiting:true}:t)
+  }
+  useEffect(()=>{
+    if(!tour||!tour.waiting) return
+    const id=setTimeout(()=>{ if(tour.step<tourOrder.length-1) startTour(tour.step+1,true); else setTour(t=>t&&{...t,waiting:false,playing:false,end:true}) },1400)
+    return ()=>clearTimeout(id)
+  },[tour])
   const [pop,setPop]=useState(null) // 'busca' | 'ajuda' | 'menu'
   const [term,setTerm]=useState('')
   const searchRef=useRef(null)
   const anchor=useRef(null)
   const popupRef=useRef(null)
   const linesRef=useRef(null)
-  const showInset=inset&&!near&&!view2d&&isBarn(selected)
+  const showInset=inset&&!near&&!view2d&&selected>=0&&!tour
   function showOnMap(i){
     selectSector(i)
     document.getElementById('granja').scrollIntoView({block:'start'})
@@ -114,11 +132,11 @@ function App(){
       <section className={'hero'+(selected>=0?' with-panel':'')+(view2d?' is-2d':'')} id="granja" aria-label={view2d?'Planta 2D da granja':'Maquete interativa da granja'}>
         <div className="scene">{view2d
           ? <div className="plan2d"><Plan2D selected={selected} onSelect={selectSector} showZones={showZones} activeFlows={activeFlows}/></div>
-          : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0}/>}</div>
+          : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
         {showInset && <>
           <svg ref={linesRef} className="callout-lines" aria-hidden="true" style={{opacity:0}}><line/><line/></svg>
           <div ref={popupRef} className="inset" role="dialog" aria-label={`${sector.short} (zoom)`}>
-            <div className="inset-view"><BarnInterior closeUp={false} reset={0}/></div>
+            <div className="inset-view">{isBarn(selected)?<BarnInterior key={selected} kind={selected===6?'maternidade':'creche'} closeUp={false} reset={0}/>:<Interior key={selected} i={selected}/>}</div>
             <div className="inset-head"><span className="inset-chip">{sector.short}: interior</span><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
           </div>
         </>}
@@ -130,6 +148,17 @@ function App(){
             selectSector(0)
           }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
         </div>
+        {tour && <div className="tour" role="region" aria-label="Animação guiada dos fluxos" aria-live="polite">
+          <div className="tour-top"><span className="code">Etapa {tour.step+1} de {tourOrder.length}</span><strong>{tourFlows[tour.step].name}</strong>
+            <button className="tour-x" aria-label="Fechar animação" onClick={tourStop}><X size={18}/></button></div>
+          <p>{tourFlows[tour.step].note}</p>
+          <div className="tour-ctl">
+            <button aria-label="Etapa anterior" disabled={tour.step===0} onClick={()=>startTour(tour.step-1,false)}><SkipBack size={18}/></button>
+            <button className="tour-play" onClick={()=>tour.playing?setTour(t=>({...t,playing:false,waiting:false})):(tour.end?startTour(0,true):startTour(tour.step,true))}>{tour.playing?<><Pause size={18}/>Pausar</>:<><Play size={18} fill="currentColor"/>{tour.end?'Rever':'Continuar'}</>}</button>
+            <button aria-label="Próxima etapa" disabled={tour.step===tourOrder.length-1} onClick={()=>startTour(tour.step+1,false)}><SkipForward size={18}/></button>
+          </div>
+          <p className="src">Fonte: <SourceLinks text="Guia, seção 4"/>. O traçado no mapa é didático, feito pelo grupo.</p>
+        </div>}
         <div className="map-tools" role="group" aria-label="Controles da maquete">
           {!view2d && <>
             <div className="stack">
@@ -140,9 +169,10 @@ function App(){
           </>}
           <button className={'solo'+(view2d?' on':'')} aria-pressed={view2d} aria-label={view2d?'Voltar à maquete 3D':'Ver planta 2D'} title={view2d?'Maquete 3D':'Planta 2D'} onClick={()=>{setNear(false);setView2d(v=>!v)}}>{view2d?<BoxIcon size={22}/>:<MapIcon size={22}/>}</button>
           <button className={'solo'+(showZones?' on':'')} aria-pressed={showZones} aria-label="Mostrar zonas" title="Zonas" onClick={()=>setShowZones(v=>!v)}><Layers size={22}/></button>
+          <button className={'solo'+(tour?' on':'')} aria-pressed={!!tour} aria-label="Animação guiada dos fluxos" title="Animação passo a passo" onClick={()=>tour?tourStop():startTour(0,true)}><Play size={22}/></button>
           <button className={'solo'+(flowsOn?' on':'')} aria-pressed={flowsOn} aria-label="Mostrar fluxos" title="Fluxos" onClick={()=>setActiveFlows(flowsOn?[]:flows.map(f=>f.id))}><Route size={22}/></button>
         </div>
-        {(showZones||flowsOn) && <div className="legend" aria-label="Legenda">
+        {(showZones||flowsOn)&&!tour && <div className="legend" aria-label="Legenda">
           {showZones && Object.values(zones).map(z=><span key={z.name} className="lg"><i style={{background:z.color}}/>{z.name}</span>)}
           {flowsOn && <span className="lg note">{flowLegend}</span>}
           {flowsOn && flows.map(f=><button key={f.id} aria-pressed={activeFlows.includes(f.id)} className={'lg flow'+(activeFlows.includes(f.id)?' on':'')} title={f.note} onClick={()=>toggleFlow(f.id)}><i className={f.dash?'dash':''} style={{'--c':f.color}}/>{f.name}</button>)}
