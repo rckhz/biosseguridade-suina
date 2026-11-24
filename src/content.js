@@ -102,7 +102,7 @@ export const credits = {
 
 // Objetivo acadêmico (Guia, seção 8, pede o objetivo na tela inicial).
 export const objective = {
-  txt:'A ideia é desenvolver um site interativo que apresente um protótipo virtual de uma granja de suinocultura, com foco nas medidas de biosseguridade para a prevenção de doenças emergentes, especificamente a febre aftosa.',
+  txt:'“A ideia é desenvolver um site interativo que apresente um protótipo virtual de uma granja de suinocultura, com foco nas medidas de biosseguridade para a prevenção de doenças emergentes, especificamente a febre aftosa.”',
   txtSource:'Barbara Castro',
   guia:'Desenvolver um site educativo que represente uma granja suinícola tecnificada, permitindo ao visitante explorar sua organização física, reconhecer vias de entrada do vírus da febre aftosa, consultar medidas de biosseguridade e praticar decisões frente a uma suspeita sanitária.',
   guiaSource:'Guia, seção 1',
