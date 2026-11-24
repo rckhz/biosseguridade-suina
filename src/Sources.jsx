@@ -6,17 +6,15 @@ const DOCS = {
   Guia: 'documentos/guia.html',
   Plano: 'documentos/plano.html',
   Banner: 'documentos/banner.pdf',
-  'txt.txt': 'documentos/ideia.html',
 }
 const ext = {target:'_blank', rel:'noreferrer'}
 
 function Part({text}){
-  const m = text.match(/^(Guia|Plano|Banner|txt\.txt)\b(.*)$/s)
+  const m = text.match(/^(Guia|Plano|Banner)\b(.*)$/s)
   if(!m) return text
   const [, doc, rest] = m
   const href = DOCS[doc]
-  // Banner e txt: um só arquivo, o link cobre a citação inteira.
-  if(doc==='Banner' || doc==='txt.txt') return <a href={href} {...ext}>{text}</a>
+  if(doc==='Banner') return <a href={href} {...ext}>{text}</a>
   // Guia e Plano: cada número de seção abre a sua âncora.
   const pieces = rest.split(/(\d+)/)
   return <><a href={`${href}#secao-${rest.match(/\d+/)?.[0]||1}`} {...ext}>{doc}</a>{pieces.map((p,k)=>/^\d+$/.test(p)

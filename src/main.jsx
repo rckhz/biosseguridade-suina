@@ -174,7 +174,7 @@ function App(){
       <section className="block objective" id="objetivo" aria-labelledby="t-obj">
         <div className="block-head"><h2 id="t-obj">Objetivo do trabalho</h2></div>
         <div className="obj-grid">
-          <blockquote><p>{objective.txt}</p><cite><a href="documentos/ideia.html" target="_blank" rel="noreferrer">{objective.txtSource}</a></cite></blockquote>
+          <blockquote><p>{objective.txt}</p><cite>{objective.txtSource}</cite></blockquote>
           <blockquote><p>{objective.guia}</p><cite><SourceLinks text={objective.guiaSource}/></cite></blockquote>
         </div>
         <p className="status"><Info size={22} aria-hidden="true"/><span>{objective.ficticia} <em className="src-inline">(<SourceLinks text={objective.guiaSource}/>)</em> O traçado dos fluxos e a posição dos setores no mapa foram feitos pelo grupo a partir das seções <a href="documentos/guia.html#secao-3" target="_blank" rel="noreferrer">3</a> e <a href="documentos/guia.html#secao-4" target="_blank" rel="noreferrer">4</a> do guia.</span></p>

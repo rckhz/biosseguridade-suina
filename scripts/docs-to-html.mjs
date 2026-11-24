@@ -2,7 +2,7 @@
 // (#secao-3), para que as fontes citadas no site abram direto no trecho consultado.
 // Os .docx não abrem no navegador; viram HTML. O banner (PDF) e os originais são copiados como estão.
 import mammoth from 'mammoth'
-import {mkdir, readFile, writeFile, copyFile} from 'node:fs/promises'
+import {mkdir, writeFile, copyFile} from 'node:fs/promises'
 
 const SRC = 'material-didatico'
 const OUT = 'public/documentos'
@@ -52,10 +52,5 @@ async function docx(key, title) {
 await docx('guia', 'Guia para desenvolvimento do site')
 await docx('plano', 'Plano de biosseguridade contra doenças emergentes')
 await copyFile(`${SRC}/${files.banner}`, `${OUT}/banner.pdf`)
-
-// Descrição da ideia (txt.txt), escrita por Barbara Castro.
-const ideia = (await readFile('txt.txt', 'utf8')).trim().split(/\n\s*\n/).map(p => `<p>${p.trim()}</p>`).join('\n')
-await copyFile('txt.txt', `${OUT}/ideia.txt`)
-await writeFile(`${OUT}/ideia.html`, page('Descrição da ideia', 'ideia.txt', `<h1>Descrição da ideia</h1>\n<p><em>Barbara Castro</em></p>\n${ideia}`))
 
 console.log('documentos gerados em', OUT)
