@@ -391,3 +391,6 @@ nav a,nav a.current,.icon-btn,header .btn,header .tag,header .badge{border:0}
   .stage .inset{top:10px;right:10px}
   .tour{position:static;max-width:none;margin:0;border-radius:0;box-shadow:none;border-width:1px 0}
 }
+
+/* Janela do interior sem título: só o botão de fechar, no canto */
+.inset-head{justify-content:flex-end}

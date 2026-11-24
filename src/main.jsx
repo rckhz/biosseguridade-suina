@@ -147,7 +147,7 @@ function App(){
           <svg ref={linesRef} className="callout-lines" aria-hidden="true" style={{opacity:0}}><line/><line/></svg>
           <div ref={popupRef} className="inset" role="dialog" aria-label={`${sector.short} (zoom)`}>
             <div className="inset-view">{isBarn(selected)?<BarnInterior key={selected} kind={selected===6?'maternidade':'creche'} closeUp={false} reset={0}/>:<Interior key={selected} i={selected}/>}</div>
-            <div className="inset-head"><span className="inset-chip">{sector.short}: interior</span><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
+            <div className="inset-head"><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
           </div>
         </>}
         <div className="map-tools" role="group" aria-label="Controles da maquete">
