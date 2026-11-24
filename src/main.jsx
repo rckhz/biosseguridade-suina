@@ -131,6 +131,15 @@ function App(){
     </header>
     <main>
       <section className={'hero'+(selected>=0?' with-panel':'')+(view2d?' is-2d':'')+(tour?' touring':'')} id="granja" aria-label={view2d?'Planta 2D da granja':'Maquete interativa da granja'}>
+        <div className={exploring?'hero-copy exploring':'hero-copy'}>
+          <h1>Biosseguridade na<br/>Suinocultura</h1>
+          <p>Conheça a estrutura de uma granja, aprenda medidas de biosseguridade e descubra como prevenir a febre aftosa.</p>
+          <button className="cta" onClick={()=>{
+            setExploring(true)
+            selectSector(0)
+          }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
+        </div>
+        <div className="stage">
         <div className="scene">{view2d
           ? <div className="plan2d"><Plan2D selected={selected} onSelect={selectSector} showZones={showZones} activeFlows={activeFlows}/></div>
           : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
@@ -141,26 +150,6 @@ function App(){
             <div className="inset-head"><span className="inset-chip">{sector.short}: interior</span><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
           </div>
         </>}
-        <div className={exploring?'hero-copy exploring':'hero-copy'}>
-          <h1>Biosseguridade na<br/>Suinocultura</h1>
-          <p>Conheça a estrutura de uma granja, aprenda medidas de biosseguridade e descubra como prevenir a febre aftosa.</p>
-          <button className="cta" onClick={()=>{
-            setExploring(true)
-            selectSector(0)
-          }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
-        </div>
-        {tour && <div className="tour" role="region" aria-label="Animação guiada dos fluxos" aria-live="polite">
-          <div className="tour-top"><span className="code">Etapa {tour.step+1} de {tourOrder.length}</span><strong>{tourFlows[tour.step].name}</strong>
-            <button className="tour-x" aria-label="Fechar animação" onClick={tourStop}><X size={18}/></button></div>
-          <div className="tour-ctl">
-            <button aria-label="Etapa anterior" disabled={tour.step===0} onClick={()=>startTour(tour.step-1,false)}><SkipBack size={18}/></button>
-            <button className="tour-play" onClick={()=>tour.playing?setTour(t=>({...t,playing:false,waiting:false})):(tour.end?startTour(0,true):startTour(tour.step,true))}>{tour.playing?<><Pause size={18}/>Pausar</>:<><Play size={18} fill="currentColor"/>{tour.end?'Rever':'Continuar'}</>}</button>
-            <button aria-label="Próxima etapa" disabled={tour.step===tourOrder.length-1} onClick={()=>startTour(tour.step+1,false)}><SkipForward size={18}/></button>
-            <button aria-label="Descrição da etapa" aria-expanded={tourInfo} className={tourInfo?'on':''} onClick={()=>setTourInfo(v=>!v)}><Info size={18}/></button>
-          </div>
-          {tourInfo && <><p>{tourFlows[tour.step].note}</p>
-          <p className="src">Fonte: <SourceLinks text="Guia, seção 4"/>. O traçado no mapa é didático, feito pelo grupo.</p></>}
-        </div>}
         <div className="map-tools" role="group" aria-label="Controles da maquete">
           {!view2d && <>
             <div className="stack">
@@ -174,6 +163,19 @@ function App(){
           <button className={'solo'+(tour?' on':'')} aria-pressed={!!tour} aria-label="Animação guiada dos fluxos" title="Animação passo a passo" onClick={()=>tour?tourStop():startTour(0,true)}><Play size={22}/></button>
           <button className={'solo'+(flowsOn?' on':'')} aria-pressed={flowsOn} aria-label="Mostrar fluxos" title="Fluxos" onClick={()=>setActiveFlows(flowsOn?[]:flows.map(f=>f.id))}><Route size={22}/></button>
         </div>
+        </div>
+        {tour && <div className="tour" role="region" aria-label="Animação guiada dos fluxos" aria-live="polite">
+          <div className="tour-top"><span className="code">Etapa {tour.step+1} de {tourOrder.length}</span><strong>{tourFlows[tour.step].name}</strong>
+            <button className="tour-x" aria-label="Fechar animação" onClick={tourStop}><X size={18}/></button></div>
+          <div className="tour-ctl">
+            <button aria-label="Etapa anterior" disabled={tour.step===0} onClick={()=>startTour(tour.step-1,false)}><SkipBack size={18}/></button>
+            <button className="tour-play" onClick={()=>tour.playing?setTour(t=>({...t,playing:false,waiting:false})):(tour.end?startTour(0,true):startTour(tour.step,true))}>{tour.playing?<><Pause size={18}/>Pausar</>:<><Play size={18} fill="currentColor"/>{tour.end?'Rever':'Continuar'}</>}</button>
+            <button aria-label="Próxima etapa" disabled={tour.step===tourOrder.length-1} onClick={()=>startTour(tour.step+1,false)}><SkipForward size={18}/></button>
+            <button aria-label="Descrição da etapa" aria-expanded={tourInfo} className={tourInfo?'on':''} onClick={()=>setTourInfo(v=>!v)}><Info size={18}/></button>
+          </div>
+          {tourInfo && <><p>{tourFlows[tour.step].note}</p>
+          <p className="src">Fonte: <SourceLinks text="Guia, seção 4"/>. O traçado no mapa é didático, feito pelo grupo.</p></>}
+        </div>}
         {(showZones||flowsOn)&&!tour && <div className="legend" aria-label="Legenda">
           {showZones && Object.values(zones).map(z=><span key={z.name} className="lg"><i style={{background:z.color}}/>{z.name}</span>)}
           {flowsOn && <span className="lg note">{flowLegend}</span>}

@@ -381,3 +381,13 @@ nav a,nav a.current,.icon-btn,header .btn,header .tag,header .badge{border:0}
 .tour-ctl button{min-height:40px;min-width:40px;padding:0 10px}
 .tour-ctl button.on{background:var(--mint);border-color:var(--green-d)}
 @media (max-width:900px){.tour{left:12px;right:12px;max-width:none;bottom:72px}}
+
+/* Palco: no celular a maquete, a janela do interior e os botões ficam juntos; o cartão da animação vem abaixo, sem cobrir o mapa */
+.stage{display:contents}
+@media (max-width:900px){
+  .stage{display:block;position:relative;height:64svh;min-height:380px}
+  .stage .scene{position:absolute!important;inset:0;height:auto;min-height:0}
+  .stage .map-tools{top:auto;bottom:10px;left:10px}
+  .stage .inset{top:10px;right:10px}
+  .tour{position:static;max-width:none;margin:0;border-radius:0;box-shadow:none;border-width:1px 0}
+}
