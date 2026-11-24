@@ -181,7 +181,6 @@ function App(){
           <blockquote><p>{objective.txt}</p><cite>{objective.txtSource}</cite></blockquote>
           <blockquote><p>{objective.guia}</p><cite><SourceLinks text={objective.guiaSource}/></cite></blockquote>
         </div>
-        <p className="status"><Info size={22} aria-hidden="true"/><span>{objective.ficticia} <em className="src-inline">(<SourceLinks text={objective.guiaSource}/>)</em> O traçado dos fluxos e a posição dos setores no mapa foram feitos pelo grupo a partir das seções <a href="documentos/guia.html#secao-3" target="_blank" rel="noreferrer">3</a> e <a href="documentos/guia.html#secao-4" target="_blank" rel="noreferrer">4</a> do guia.</span></p>
       </section>
       <section className="block tint" id="setores" aria-labelledby="t-set">
         <div className="block-head"><h2 id="t-set">Os 12 setores da granja</h2><p className="src"><SourceLinks text="Guia, seção 9"/>: “alternativa textual ao mapa”. Conteúdo: <SourceLinks text="Guia, seções 3 e 5"/>.</p></div>

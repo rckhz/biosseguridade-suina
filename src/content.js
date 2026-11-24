@@ -106,5 +106,4 @@ export const objective = {
   txtSource:'Barbara Castro',
   guia:'Desenvolver um site educativo que represente uma granja suinícola tecnificada, permitindo ao visitante explorar sua organização física, reconhecer vias de entrada do vírus da febre aftosa, consultar medidas de biosseguridade e praticar decisões frente a uma suspeita sanitária.',
   guiaSource:'Guia, seção 1',
-  ficticia:'A granja é fictícia e seu desenho é didático: dimensões, distâncias, fluxos e procedimentos reais devem ser ajustados por responsável técnico e normas aplicáveis.',
 }
