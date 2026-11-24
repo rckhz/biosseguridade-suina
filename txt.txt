@@ -1,0 +1,5 @@
+A ideia é desenvolver um site interativo que apresente um protótipo virtual de uma granja de suinocultura, com foco nas medidas de biosseguridade para a prevenção de doenças emergentes, especificamente a febre aftosa.
+
+Pensei em apresentar a estrutura da granja, permitindo que o usuário explore os diferentes setores e, ao clicar em cada instalação, visualize informações sobre sua função, os riscos sanitários e as medidas de biosseguridade necessárias.
+
+O objetivo é criar uma ferramenta visual e interativa para apresentarmos o protótipo na faculdade, demonstrando como a organização da propriedade e a adoção de medidas preventivas contribuem para evitar a introdução e a disseminação da febre aftosa.
