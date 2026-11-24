@@ -23,7 +23,10 @@ const quick=[
 
 function App(){
   const q=new URLSearchParams(location.search)
-  const [selected,select]=useState(q.has('setor')?Number(q.get('setor'))-1:7)
+  const [selected,select]=useState(()=>{
+    const sectorNumber=Number(q.get('setor'))
+    return Number.isInteger(sectorNumber) && sectorNumber>=1 && sectorNumber<=sectors.length ? sectorNumber-1 : -1
+  })
   const [reset,setReset]=useState(0)
   const [exploring,setExploring]=useState(false)
   const [near,setNear]=useState(q.has('galpao'))
