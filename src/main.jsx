@@ -25,6 +25,7 @@ function App(){
   const q=new URLSearchParams(location.search)
   const [selected,select]=useState(q.has('setor')?Number(q.get('setor'))-1:7)
   const [reset,setReset]=useState(0)
+  const [exploring,setExploring]=useState(false)
   const [near,setNear]=useState(q.has('galpao'))
   const [inset,setInset]=useState(true)
   const [view2d,setView2d]=useState(q.has('2d'))
@@ -118,10 +119,13 @@ function App(){
             <div className="inset-head"><span className="inset-chip">{sector.short}: interior</span><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
           </div>
         </>}
-        <div className="hero-copy">
+        <div className={exploring?'hero-copy exploring':'hero-copy'}>
           <h1>Biosseguridade na<br/>Suinocultura</h1>
           <p>Conheça a estrutura de uma granja, aprenda medidas de biosseguridade e descubra como prevenir a febre aftosa.</p>
-          <button className="cta" onClick={()=>selectSector(0)}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
+          <button className="cta" onClick={()=>{
+            setExploring(true)
+            selectSector(0)
+          }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
         </div>
         <div className="map-tools" role="group" aria-label="Controles da maquete">
           {!view2d && <>

@@ -184,6 +184,7 @@ button.lg:not(.on){opacity:.65}button.lg.on{border-color:var(--green)}
   .scene{position:relative!important;height:62svh;min-height:420px}
   .hero-copy{width:100%;bottom:auto;padding:18px 16px 60px;-webkit-mask:none;mask:none;background:linear-gradient(180deg,#1f1c22e0 0,#1f1c2299 60%,transparent)}
   .hero-copy h1{font-size:1.9rem}.hero-copy p{font-size:.95rem;margin:.5rem 0 .9rem}
+  .hero-copy.exploring{display:none}
   .cta{min-height:48px;font-size:1rem;padding:0 20px 0 16px}
   .map-tools{top:calc(max(62svh,420px) - 56px);bottom:auto;left:10px;flex-direction:row;gap:6px}.map-tools .stack{flex-direction:row}.map-tools .stack button+button{border-top:0;border-left:1px solid var(--line)}.map-tools button{width:44px;height:44px}
   .legend{position:static;max-width:none;padding:10px 16px;background:var(--surface)}
