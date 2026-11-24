@@ -360,3 +360,6 @@ nav a,nav a.current,.icon-btn,header .btn,header .tag,header .badge{border:0}
 .tour-ctl button:disabled{opacity:.45;cursor:default}
 .tour-ctl button:focus-visible,.tour-x:focus-visible{outline:3px solid var(--green-d);outline-offset:2px}
 @media (max-width:900px){.tour{left:12px;right:12px;max-width:none;bottom:12px}}
+
+/* Celular: o cartão da animação guiada sobe acima dos botões e o título some para dar espaço */
+@media (max-width:900px){.tour{bottom:72px}.hero.touring .hero-copy{display:none}}

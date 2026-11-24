@@ -129,7 +129,7 @@ function App(){
       </div>}
     </header>
     <main>
-      <section className={'hero'+(selected>=0?' with-panel':'')+(view2d?' is-2d':'')} id="granja" aria-label={view2d?'Planta 2D da granja':'Maquete interativa da granja'}>
+      <section className={'hero'+(selected>=0?' with-panel':'')+(view2d?' is-2d':'')+(tour?' touring':'')} id="granja" aria-label={view2d?'Planta 2D da granja':'Maquete interativa da granja'}>
         <div className="scene">{view2d
           ? <div className="plan2d"><Plan2D selected={selected} onSelect={selectSector} showZones={showZones} activeFlows={activeFlows}/></div>
           : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
