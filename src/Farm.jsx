@@ -3,23 +3,36 @@ import {Canvas, useFrame, useThree} from '@react-three/fiber'
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
 import {Html} from '@react-three/drei/web/Html.js'
 import {CanvasTexture,RepeatWrapping,SRGBColorSpace,Vector3,Shape} from 'three'
-import {sectors,flows,zones,isBarn,barnKind} from './sectors'
+import {sectors,flows,zones,isBarn,barnKind,tourStages} from './sectors'
 import {sectorIcons} from './icons'
 import Pig from './Pig'
 
-function Camera({reset,selected,near,zoomTick,panelOpen}) {
+const FRONT_ANG = Math.atan2(13, 29)
+const FRONT_RAD = Math.hypot(13, 29)
+const FRONT_Y = 18
+
+function Camera({reset,selected,near,zoomTick,panelOpen,tour,tourFocusRef}) {
   const {camera,gl,size,invalidate} = useThree()
   const controls = useRef(null)
   const base = useRef(1)
   const first = useRef(true)
+  const userMoved = useRef(false)
+  const camAngle = useRef(FRONT_ANG)
+  const camRad = useRef(FRONT_RAD)
+  const camY = useRef(FRONT_Y)
   const wide = size.width>900
+  const touring = Boolean(tour)
   useLayoutEffect(() => {
     base.current = Math.min(size.width / (wide?30:24), size.height / 15)
     camera.zoom = base.current
-    camera.setViewOffset(size.width,size.height,panelOpen&&wide?-70:0,-size.height*(panelOpen&&wide?.2:.1),size.width,size.height)
     camera.updateProjectionMatrix()
     invalidate()
-  }, [size,camera,invalidate,panelOpen,wide])
+  }, [size,camera,invalidate,wide])
+  useLayoutEffect(() => {
+    camera.setViewOffset(size.width,size.height,panelOpen&&wide?-70:0,-size.height*(panelOpen&&wide?.2:touring?.04:.1),size.width,size.height)
+    camera.updateProjectionMatrix()
+    invalidate()
+  }, [size,camera,invalidate,panelOpen,touring,wide])
   useEffect(() => {
     camera.position.set(13,18,29)
     const c = new OrbitControls(camera,gl.domElement)
@@ -29,25 +42,88 @@ function Camera({reset,selected,near,zoomTick,panelOpen}) {
     c.maxPolarAngle = Math.PI / 2 - 0.025
     c.minZoom = base.current*.4
     c.maxZoom = base.current*12
+    const onStart = () => { userMoved.current = true }
+    c.addEventListener('start',onStart)
     c.addEventListener('change',invalidate)
     c.update()
     invalidate()
-    return () => c.dispose()
+    return () => { c.removeEventListener('start',onStart); c.dispose() }
   }, [reset,camera,gl,invalidate,size])
   useEffect(() => {
+    if (!tour) return
+    userMoved.current = false
+    const st = tourStages[tour.flow.id]
+    if (tourFocusRef) tourFocusRef.current = {x:st.x,z:st.z}
+    const desiredAng = st.orbit ? FRONT_ANG + st.orbit : FRONT_ANG
+    const c = controls.current
+    if (c) {
+      const dx = camera.position.x - c.target.x
+      const dz = camera.position.z - c.target.z
+      const curAng = Math.atan2(dx, dz)
+      let diff = ((desiredAng - curAng + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
+      if (Math.abs(Math.abs(diff) - Math.PI) < 0.05) diff = st.orbit ? Math.PI : -Math.PI
+      camAngle.current = desiredAng - diff
+      camRad.current = Math.hypot(dx, dz) || FRONT_RAD
+      camY.current = camera.position.y
+    }
+    invalidate()
+  }, [tour?.step,tour?.run,tour?.flow?.id,invalidate])
+  useFrame((_,dt) => {
+    if (!tour || userMoved.current || !controls.current || !tourFocusRef?.current) return
+    const c = controls.current
+    const st = tourStages[tour.flow.id]
+    const tx = tourFocusRef.current.x, tz = tourFocusRef.current.z
+    const desiredAng = st.orbit ? FRONT_ANG + st.orbit : FRONT_ANG
+    const desiredRad = st.orbit ? 29 : FRONT_RAD
+    const desiredY = st.orbit ? 22 : FRONT_Y
+    const tzoom = base.current * st.zoom * (wide ? 1 : 0.78)
+    const a = 1 - Math.exp(-Math.min(dt, 0.05) * 3.8)
+    c.target.x += (tx - c.target.x) * a
+    c.target.y += (0 - c.target.y) * a
+    c.target.z += (tz - c.target.z) * a
+    camAngle.current += (desiredAng - camAngle.current) * a
+    camRad.current += (desiredRad - camRad.current) * a
+    camY.current += (desiredY - camY.current) * a
+    camera.position.set(
+      c.target.x + Math.sin(camAngle.current) * camRad.current,
+      camY.current,
+      c.target.z + Math.cos(camAngle.current) * camRad.current
+    )
+    camera.zoom += (tzoom - camera.zoom) * a
+    camera.updateProjectionMatrix()
+    c.update()
+    const dT = Math.hypot(tx - c.target.x, tz - c.target.z)
+    const dA = Math.abs(desiredAng - camAngle.current)
+    const dR = Math.abs(desiredRad - camRad.current) + Math.abs(desiredY - camY.current)
+    if (dT > 0.02 || dA > 0.005 || dR > 0.05 || Math.abs(tzoom - camera.zoom) > 0.05) invalidate()
+  })
+  useEffect(() => {
+    if (touring) return
     first.current = false
     const c = controls.current
     if (!c) return
     const s = selected>=0 ? sectors[selected] : {x:0,z:0}
-    const delta = new Vector3(s.x,0,s.z).sub(c.target)
-    const p0 = camera.position.clone(), t0 = c.target.clone(), z0 = camera.zoom
+    const t0 = c.target.clone(), p0 = camera.position.clone(), z0 = camera.zoom
+    const delta = new Vector3(s.x,0,s.z).sub(t0)
     const z1 = base.current*(selected<0?1:near?(isBarn(selected)?3.6:2.8):1.15)
+    const dx0 = p0.x - t0.x, dz0 = p0.z - t0.z
+    const a0 = Math.atan2(dx0, dz0), r0 = Math.hypot(dx0, dz0) || FRONT_RAD, y0 = p0.y
+    let aDiff = ((FRONT_ANG - a0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI
+    if (Math.abs(Math.abs(aDiff) - Math.PI) < 0.05) aDiff = -Math.PI
+    const pDelta = p0.clone().add(delta).sub(p0)
     const start = performance.now()
     let raf
     const step = now => {
       const k = Math.min(1,(now-start)/750), e = 1-Math.pow(1-k,3)
       c.target.copy(t0).addScaledVector(delta,e)
-      camera.position.copy(p0).addScaledVector(delta,e)
+      if (selected < 0) {
+        const ang = a0 + aDiff * e
+        const rad = r0 + (FRONT_RAD - r0) * e
+        const yy = y0 + (FRONT_Y - y0) * e
+        camera.position.set(c.target.x + Math.sin(ang) * rad, yy, c.target.z + Math.cos(ang) * rad)
+      } else {
+        camera.position.copy(p0).addScaledVector(pDelta,e)
+      }
       camera.zoom = z0+(z1-z0)*e
       camera.updateProjectionMatrix()
       c.update()
@@ -56,9 +132,10 @@ function Camera({reset,selected,near,zoomTick,panelOpen}) {
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [selected,near,camera,invalidate])
+  }, [selected,near,touring,camera,invalidate])
   useEffect(() => {
     if (!zoomTick) return
+    userMoved.current = true
     const c = controls.current
     camera.zoom = Math.min(c.maxZoom,Math.max(c.minZoom,camera.zoom*zoomTick.f))
     camera.updateProjectionMatrix()
@@ -113,6 +190,7 @@ function Tracker({target,onAnchor}){
     if(!f) return
     if(!target) return f(null)
     v.current.set(target.x,1.3,target.z).project(camera)
+    if(Math.abs(v.current.x)>.98||Math.abs(v.current.y)>.98) return f(null)
     f((v.current.x+1)/2*size.width,(1-v.current.y)/2*size.height)
   })
   return null
@@ -188,9 +266,10 @@ function RodoluvioFx(){
     <Drops n={16} color="#9ad6f5" at={[-2.35,1.82,0]} h={1.65} spread={.65} speed={1.25}/>
     <Ripple at={[-2.35,.21,0]} color="#48a9cc" max={1.05} period={1.4}/>
     <group ref={van} position={[-2.35,0,2.5]}>
-      <Box at={[0,.42,0]} size={[.86,.52,1.45]} color="#e8ecea"/>
-      <Box at={[0,.36,-.88]} size={[.82,.42,.52]} color="#3f6b78"/>
-      <Box at={[0,.6,-.9]} size={[.76,.22,.46]} color="#b8d6de"/>
+      <Box at={[0,.48,0]} size={[.86,.58,1.45]} color="#e8ecea"/>
+      <Box at={[0,.40,-.90]} size={[.82,.46,.54]} color="#3f6b78"/>
+      <Box at={[0,.64,-.92]} size={[.76,.22,.46]} color="#b8d6de"/>
+      <Box at={[0,.78,-.90]} size={[.82,.08,.54]} color="#355c68"/>
       {[-.44,.44].map(x=>[-.82,.45].map(z=><mesh key={x+'_'+z} position={[x,.17,z]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.16,.16,.1,12]}/><meshStandardMaterial color="#262a2a"/></mesh>))}
     </group>
     <mesh ref={okRing} position={[-2.35,.19,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.62,.78,28]}/><meshBasicMaterial color="#2f7d62" toneMapped={false}/></mesh>
@@ -233,14 +312,38 @@ function Shower({d}){
     </group>
   </group>
 }
-// 06 Embarcadouro: movimentação pela rampa perimetral
+// 06 Embarcadouro: após a ré do caminhão, suínos saem de dentro da carroceria e descem a rampa
 function RampFx(){
-  const t=useTick(),ref=useRef()
+  const t=useTick(),pigs=useRef([])
   useFrame(()=>{
-    const k=(t.current*.35)%1
-    ref.current.position.set(0,.22+.35*(1-k),1.1-2.2*k)
+    const elapsed=t.current-2.4
+    pigs.current.forEach((g,idx)=>{
+      if(!g) return
+      const raw=elapsed*.18-idx*.5
+      if(raw<0){g.visible=false;return}
+      const k=raw%1
+      let z,y
+      if(k<.22){
+        const p=k/.22
+        z=.85-.55*p
+        y=.44
+      }else if(k<.68){
+        const p=(k-.22)/.46
+        z=.3-1.1*p
+        y=.44-.29*p
+      }else{
+        const p=(k-.68)/.32
+        z=-.8-.75*p
+        y=.15
+      }
+      g.position.set(0,y,z)
+      g.visible=k>.03&&k<.96
+    })
   })
-  return <group><group ref={ref} rotation={[0,Math.PI,0]} scale={.45}><Pig x={0} z={0} phase={.3}/></group><Ripple at={[0,.2,-1.1]} color="#c2b257" max={1.1} period={2.2}/></group>
+  return <group>
+    {[0,1].map(idx=><group key={idx} ref={g=>{pigs.current[idx]=g}} visible={false} rotation={[0,Math.PI,0]} scale={.42}><Pig x={0} z={0} phase={idx*1.7+.3} inPlace/></group>)}
+    <Ripple at={[0,.2,-1.25]} color="#c2b257" max={1.05} period={2.2}/>
+  </group>
 }
 // 07 Quarentena
 function Isolation({w,d}){
@@ -323,6 +426,9 @@ function Building({s,i,selected,onSelect,portal,showZones,cut,hide,tourFlowId}) 
     {i===8 && tourFlowId==='pessoas' && !(selected&&!cut) &&
       <Ripple at={[0,.23,d/2+.36]} color="#48a9cc" max={.95} period={1.4}/>
     }
+    {i===5 && tourFlowId==='animais' && !(selected&&!cut) &&
+      <Ripple at={[0,.2,-1.2]} color="#c2b257" max={1.05} period={1.8}/>
+    }
     <Html portal={portal} position={[0,2.5,0]} center zIndexRange={[5,1]}>
       <button className={'pin'+(selected?' active':'')} aria-label={s.name} aria-pressed={selected} onClick={()=>onSelect(i)}>
         <b><Icon size={19} strokeWidth={2.2}/></b>{selected && <span>{s.short}</span>}
@@ -373,13 +479,15 @@ function Building({s,i,selected,onSelect,portal,showZones,cut,hide,tourFlowId}) 
             <Box at={[0,.17,0]} size={[.96,.065,.68]} color="#e7b93c"/>
             <Box at={[0,.21,0]} size={[.8,.03,.52]} color="#48a9cc"/>
           </group>)}</>
-      /* 06 Embarcadouro e desembarcadouro junto ao perímetro */
+      /* 06 Embarcadouro e desembarcadouro junto ao perímetro (cobertura aberta e rampa descendo para a granja) */
       : i===5 ? <>
-          <Box at={[0,.45,-.2]} size={[1.35,.65,1.0]} color="#ece8df"/>
-          <Box at={[0,.86,-.2]} size={[1.55,.1,1.16]} color="#899595"/>
-          <Box at={[0,.34,.45]} size={[1.15,.12,1.15]} tilt={.28} color="#b9b4a6"/>
-          {[-.55,.55].map(x=><Box key={x} at={[x,.62,.42]} size={[.07,.48,1.15]} tilt={.28} color="#6f7a76"/>)}
-          <Box at={[0,.16,1.02]} size={[1.6,.04,.22]} color="#e7b93c"/>
+          <Box at={[0,.29,.42]} size={[1.26,.30,.28]} color="#b9b4a6"/>
+          <Box at={[0,.40,.57]} size={[1.45,.08,.08]} color="#e7b93c"/>
+          {[-.55,.55].map(x=><Box key={'p'+x} at={[x,.65,.42]} size={[.07,.44,.30]} color="#6f7a76"/>)}
+          <Box at={[0,.295,-.25]} size={[1.12,.08,1.10]} tilt={-.27} color="#b9b4a6"/>
+          {[-.55,.55].map(x=><Box key={'r'+x} at={[x,.55,-.25]} size={[.07,.44,1.12]} tilt={-.27} color="#6f7a76"/>)}
+          {[-.68,.68].flatMap(x=>[-.65,.48].map(z=><Box key={x+'_'+z} at={[x,.72,z]} size={[.08,1.28,.08]} color="#6c7572"/>))}
+          <Box at={[0,1.38,-.08]} size={[1.6,.08,1.35]} color="#899595"/>
         </>
       : cut ? <Cutaway w={w} d={d} kind={kind}/>
       : <><Box at={[0,.7,0]} size={[w,1.2,d]} color="#ece8df"/>
@@ -477,35 +585,67 @@ function Fence({at,length,turn=0}){
 }
 function Truck({at,turn=0,color='#e8ecea'}){
   return <group position={at} rotation={[0,turn,0]}>
-    <Box at={[0,.75,0]} size={[2.6,1.2,1.15]} color={color}/>
-    <Box at={[0,.4,0]} size={[2.64,.12,1.19]} color="#5a615f"/>
-    <Box at={[0,1.0,.585]} size={[2.6,.1,.02]} color="#a3546a"/><Box at={[0,1.0,-.585]} size={[2.6,.1,.02]} color="#a3546a"/>
-    <Box at={[1.75,.62,0]} size={[.95,.95,1.1]} color="#3f6b78"/>
-    <Box at={[1.78,.98,0]} size={[.62,.34,1.12]} color="#b8d6de"/>
-    <Box at={[2.24,.45,0]} size={[.06,.3,.8]} color="#2c3030"/>
-    <Box at={[2.26,.2,0]} size={[.1,.1,1.15]} color="#8a918f"/>
-    {[-.3,.3].map(z=><Box key={z} at={[2.23,.62,z*1.4]} size={[.04,.1,.14]} color="#ffe9a8"/>)}
-    {[-.9,.9,1.8].map(x=>[-.6,.6].map(z=><group key={x+'_'+z} position={[x,.25,z]} rotation={[Math.PI/2,0,0]}><mesh><cylinderGeometry args={[.25,.25,.14,14]}/><meshStandardMaterial color="#2c3030"/></mesh><mesh position={[0,z>0?.08:-.08,0]}><cylinderGeometry args={[.11,.11,.03,10]}/><meshStandardMaterial color="#b9c0be"/></mesh></group>))}
+    <Box at={[0,.86,0]} size={[2.6,1.16,1.16]} color={color}/>
+    <Box at={[.25,.28,0]} size={[3.2,.12,.96]} color="#5a615f"/>
+    <Box at={[0,1.08,.585]} size={[2.6,.09,.02]} color="#a3546a"/><Box at={[0,1.08,-.585]} size={[2.6,.09,.02]} color="#a3546a"/>
+    <Box at={[1.80,.58,0]} size={[.94,.62,1.12]} color="#3f6b78"/>
+    <Box at={[1.47,1.09,0]} size={[.28,.42,1.12]} color="#3f6b78"/>
+    <Box at={[1.88,1.07,0]} size={[.66,.34,1.06]} color="#b8d6de"/>
+    <Box at={[2.22,1.07,0]} size={[.06,.33,.98]} color="#cde4ec"/>
+    {[-.52,.52].map(z=><Box key={'pa'+z} at={[2.21,1.07,z]} size={[.07,.36,.08]} color="#2e4d57"/>)}
+    {[-.53,.53].map(z=><Box key={'pb'+z} at={[1.60,1.07,z]} size={[.07,.36,.07]} color="#2e4d57"/>)}
+    <Box at={[1.79,1.30,0]} size={[.92,.11,1.12]} color="#355c68"/>
+    <Box at={[1.56,1.40,0]} size={[.42,.12,1.02]} roll={-.26} color="#355c68"/>
+    <Box at={[2.28,.55,0]} size={[.04,.30,.74]} color="#283032"/>
+    <Box at={[2.295,.62,0]} size={[.02,.05,.68]} color="#b9c0be"/>
+    <Box at={[2.28,.28,0]} size={[.12,.13,1.16]} color="#6d7574"/>
+    {[-.38,.38].map(z=><Box key={'hl'+z} at={[2.28,.50,z]} size={[.05,.10,.16]} color="#ffe9a8"/>)}
+    {[-.64,.64].map(z=><group key={'mr'+z}><Box at={[2.10,1.04,z>0?.58:-.58]} size={[.03,.03,.10]} color="#2c3030"/><Box at={[2.10,1.04,z]} size={[.06,.22,.05]} color="#2c3030"/></group>)}
+    {[-.9,.9,1.8].map(x=>[-.58,.58].map(z=><group key={x+'_'+z} position={[x,.25,z]} rotation={[Math.PI/2,0,0]}><mesh><cylinderGeometry args={[.25,.25,.14,14]}/><meshStandardMaterial color="#2c3030"/></mesh><mesh position={[0,z>0?.08:-.08,0]}><cylinderGeometry args={[.11,.11,.03,10]}/><meshStandardMaterial color="#b9c0be"/></mesh></group>))}
   </group>
 }
-const PARK=6.4
-function ArrivingTruck({play,parked,inTour,onDone}){
-  const ref=useRef(),ring=useRef(),t=useRef(0),done=useRef(onDone),fired=useRef(false)
+function ArrivingTruck({play,mode,onDone,tourFocusRef}){
+  const ref=useRef(),ring=useRef(),backOpen=useRef(),revLights=useRef(),t=useRef(0),done=useRef(onDone),fired=useRef(false)
   const {invalidate}=useThree()
   done.current=onDone
   const place=()=>{
     if(!ref.current) return
-    if(!inTour){
-      const e=1-Math.pow(1-t.current,3)
-      ref.current.position.set(-32+(PARK+32)*e,t.current>=1?0:Math.sin(t.current*80)*.012*(1-e),12.4)
-      ref.current.rotation.y=0
+    if(mode==='hidden'){
+      ref.current.visible=false
       if(ring.current) ring.current.visible=false
+      if(backOpen.current) backOpen.current.visible=false
+      if(revLights.current) revLights.current.visible=false
       return
     }
-    if(parked){
+    ref.current.visible=true
+    if(mode==='tour-parked'){
       ref.current.position.set(4.65,0,8.15)
       ref.current.rotation.y=Math.PI/2
       if(ring.current) ring.current.visible=false
+      if(backOpen.current) backOpen.current.visible=false
+      if(revLights.current) revLights.current.visible=false
+      return
+    }
+    if(mode==='reverse'){
+      const u=t.current
+      let x,z,rot
+      if(u<.48){
+        const p=u/.48, e=p*p*(3-2*p), ang=e*Math.PI/2
+        x=4.2-2.7*Math.sin(ang)
+        z=11.6+2.7*Math.cos(ang)
+        rot=-ang
+      }else{
+        const p=(u-.48)/.52, e=1-Math.pow(1-p,2)
+        x=1.5
+        z=11.6-1.95*e
+        rot=-Math.PI/2
+      }
+      ref.current.position.set(x,0,z)
+      ref.current.rotation.y=rot
+      if(tourFocusRef&&u<1) tourFocusRef.current={x:x*.55+1.5*.45,z:Math.max(8.6,z-1.4)}
+      if(ring.current) ring.current.visible=false
+      if(revLights.current) revLights.current.visible=u<1&&Math.floor(u*14)%2===0
+      if(backOpen.current) backOpen.current.visible=u>=1
       return
     }
     const u=t.current
@@ -534,29 +674,44 @@ function ArrivingTruck({play,parked,inTour,onDone}){
     }
     ref.current.position.set(x,y,z)
     ref.current.rotation.y=rot
+    if(mode==='tour-rodoluvio'&&tourFocusRef){
+      tourFocusRef.current={x:Math.max(-1.2,Math.min(5.2,x+1.0)),z:Math.max(9.0,Math.min(13.2,z-.8))}
+    }
     if(ring.current) ring.current.visible=u>.72
+    if(backOpen.current) backOpen.current.visible=false
+    if(revLights.current) revLights.current.visible=false
   }
   useEffect(()=>{
     fired.current=false
-    t.current=parked?1:0
+    t.current=(mode==='tour-rodoluvio'||mode==='reverse')?0:1
     place()
     invalidate()
-  },[play,parked,inTour,invalidate])
+  },[play,mode,invalidate])
   useFrame((_,dt)=>{
-    if(!ref.current||t.current>=1) return
-    t.current=Math.min(1,t.current+Math.min(dt,.05)/(inTour?9:7))
+    if(!ref.current) return
+    if(mode!=='tour-rodoluvio'&&mode!=='reverse') return
+    if(t.current>=1) return
+    const dur=mode==='reverse'?2.4:9
+    t.current=Math.min(1,t.current+Math.min(dt,.05)/dur)
     place()
     if(t.current>=1&&!fired.current){fired.current=true;if(done.current) done.current()}
     invalidate()
   })
-  return <group ref={ref} position={[-32,0,12.4]}>
+  return <group ref={ref} visible={false} position={[4.2,0,14.3]}>
     <Truck at={[0,0,0]}/>
+    <group ref={backOpen} visible={false}>
+      <Box at={[-1.305,.82,0]} size={[.04,.82,.88]} color="#2b2726"/>
+      <Box at={[-1.38,.44,0]} size={[.18,.05,.92]} color="#6f7a76"/>
+    </group>
+    <group ref={revLights} visible={false}>
+      {[-.46,.46].map(z=><Box key={z} at={[-1.31,.46,z]} size={[.04,.1,.14]} color="#ffbe4d"/>)}
+    </group>
     <mesh ref={ring} visible={false} position={[.5,.22,0]} rotation={[-Math.PI/2,0,0]}>
       <ringGeometry args={[1.85,2.05,36]}/><meshBasicMaterial color="#2f7d62" toneMapped={false} transparent opacity={.9}/>
     </mesh>
   </group>
 }
-function Walker({pts,color,kind,onDone}){
+function Walker({pts,color,kind,onDone,tourFocusRef}){
   const ref=useRef(),bodyGroup=useRef(),torso=useRef(),legL=useRef(),legR=useRef(),bootL=useRef(),bootR=useRef(),splash=useRef()
   const elapsed=useRef(0),done=useRef(onDone),fired=useRef(false)
   const {invalidate}=useThree()
@@ -570,14 +725,22 @@ function Walker({pts,color,kind,onDone}){
   const dBarreira=isPerson?(dEntryPed+dCleanPed)*.5:0
   const dBarnPed=isPerson&&segs.length>6?dCleanPed+segs[4].len+segs[5].len:0
   const pEntry=isPerson?.6:0, pBar=isPerson?.5:0, pBarnPed=isPerson?1.5:0
+  const waitDelay=kind==='animais'?2.4:kind==='residuos'?1.0:0
   const t1=dEntryPed/speed, t1End=t1+pEntry
   const t2=t1End+(dBarreira-dEntryPed)/speed, t2End=t2+pBar
   const t3=t2End+(dBarnPed-dBarreira)/speed, t3End=t3+pBarnPed
   const tEnd=total/speed+pEntry+pBar+pBarnPed
   useFrame((_,dt)=>{
     if(!ref.current) return
-    if(elapsed.current<tEnd) elapsed.current=Math.min(tEnd,elapsed.current+Math.min(dt,.05))
-    const te=elapsed.current
+    if(elapsed.current<waitDelay+tEnd) elapsed.current=Math.min(waitDelay+tEnd,elapsed.current+Math.min(dt,.05))
+    if(elapsed.current<waitDelay){
+      ref.current.visible=kind!=='animais'
+      if(kind==='residuos'&&tourFocusRef) tourFocusRef.current={x:pts[0][0],z:pts[0][1]+.2}
+      invalidate()
+      return
+    }
+    ref.current.visible=true
+    const te=elapsed.current-waitDelay
     let d,walking=te<tEnd,inEntry=false,inBarreira=false,inBarnPed=false,pedPhase=0
     if(!isPerson){
       d=Math.min(total,te*speed)
@@ -598,8 +761,11 @@ function Walker({pts,color,kind,onDone}){
     }
     let left=d,sg=segs[segs.length-1],k=1
     for(const s of segs){ if(left<=s.len){sg=s;k=s.len?left/s.len:1;break} left-=s.len }
-    ref.current.position.set(sg.a[0]+(sg.b[0]-sg.a[0])*k,0,sg.a[1]+(sg.b[1]-sg.a[1])*k)
+    const px=sg.a[0]+(sg.b[0]-sg.a[0])*k, pz=sg.a[1]+(sg.b[1]-sg.a[1])*k
+    const py=kind==='animais'&&Math.abs(px-1.5)<.25&&pz>7.0?(pz>8.1?.44:.15+((pz-7.0)/1.1)*.29):0
+    ref.current.position.set(px,py,pz)
     ref.current.rotation.y=Math.atan2(-(sg.b[1]-sg.a[1]),sg.b[0]-sg.a[0])
+    if(tourFocusRef) tourFocusRef.current={x:px,z:pz+(kind==='residuos'?.2:-.5)}
     if(isPerson&&bodyGroup.current){
       const dip=inBarnPed?-.02+Math.abs(Math.sin(pedPhase*Math.PI*3))*.04:0
       bodyGroup.current.position.y=inBarreira?0:walking?Math.abs(Math.sin(d*5))*.05:dip
@@ -642,9 +808,9 @@ function Walker({pts,color,kind,onDone}){
         </group>
       </group>
     : kind==='animais'
-    ? <group><mesh position={[0,.34,0]} scale={[1.3,.8,.8]} castShadow><sphereGeometry args={[.38,14,10]}/><meshStandardMaterial color="#f2c4af"/></mesh><mesh position={[.4,.38,0]} castShadow><sphereGeometry args={[.2,12,10]}/><meshStandardMaterial color="#eeaf99"/></mesh></group>
+    ? <group><group rotation={[0,Math.PI/2,0]} scale={.48}><Pig x={0} z={0} phase={.3} inPlace/></group></group>
     : <group><Box at={[0,.4,0]} size={[.6,.5,.6]} color={kind==='residuos'?'#8a8f8c':'#c9a45c'}/></group>
-  return <group ref={ref} position={[pts[0][0],0,pts[0][1]]}>
+  return <group ref={ref} visible={kind!=='animais'} position={[pts[0][0],0,pts[0][1]]}>
     {body}
     {isPerson && <mesh ref={splash} visible={false} position={[0,.23,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.35,.52,28]}/><meshBasicMaterial color="#48a9cc" transparent toneMapped={false}/></mesh>}
     <mesh position={[0,.03,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.5,.68,28]}/><meshBasicMaterial color={color} toneMapped={false} transparent opacity={.85}/></mesh>
@@ -673,11 +839,17 @@ function Path({pts,color,dash}){
 export default function Farm({selected,onSelect,reset,showZones,activeFlows,near,inset,onAnchor,zoomTick,panelOpen,tour,onTourDone}) {
   const tourFlow=tour&&tour.flow
   const portal=useRef(null)
+  const tourFocusRef=useRef(null)
   const cutting=near&&isBarn(selected)
   const sel=sectors[selected]
+  const rearView=Boolean(tour&&tourFlow?.id==='residuos')
+  const trackTarget=inset?(tour?sectors[tourStages[tourFlow.id].sector]:sel):null
+  const truckMode=tour
+    ?(tour.step===0?'tour-rodoluvio':tour.step===1?'tour-parked':tour.step===3?'reverse':'hidden')
+    :(selected===5?'reverse':'hidden')
   return <div ref={portal} style={{height:"100%"}}><Canvas resize={{debounce:0}} orthographic shadows frameloop={cutting?"always":"demand"} dpr={[1,1.6]} camera={{position:[19,20,26],near:.1,far:160}} fallback={<p>Use a lista de setores para explorar as fichas neste dispositivo.</p>}>
-    <Camera reset={reset} selected={selected} near={near} zoomTick={zoomTick} panelOpen={panelOpen}/>
-    <Tracker target={inset?sel:null} onAnchor={onAnchor}/>
+    <Camera reset={reset} selected={selected} near={near} zoomTick={zoomTick} panelOpen={panelOpen} tour={tour} tourFocusRef={tourFocusRef}/>
+    <Tracker target={trackTarget} onAnchor={onAnchor}/>
     <hemisphereLight args={['#fff6e2','#7d8c55',1.6]}/><directionalLight position={[4,15,8]} intensity={2.4} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-left={-15} shadow-camera-right={15} shadow-camera-top={15} shadow-camera-bottom={-15}/>
     <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[180,180]}/><meshStandardMaterial map={grass}/></mesh>
     {/* Cercamento perimetral conectado ao portão, embarcadouro e passagem de serviço do rodolúvio */}
@@ -687,8 +859,8 @@ export default function Farm({selected,onSelect,reset,showZones,activeFlows,near
     {Array.from({length:26},(_,i)=><Box key={i} at={[(i-13)*3,.053,13.63]} size={[1,.015,.06]} color="#f1ead0"/>)}
     <Box at={[0,.06,2.0]} size={[20,.06,1.15]} color="#d9cdb3"/><Box at={[-4.6,.06,1.3]} size={[1.6,.07,19.8]} color="#d9cdb3"/>
     <Box at={[4.65,.04,11.1]} size={[1.85,.05,1.8]} color="#cfc6b4"/><Box at={[4.65,.04,7.2]} size={[1.85,.05,2.4]} color="#cfc6b4"/>
-    <ArrivingTruck play={tour?'t'+tour.run:selected===2?'e':'i'} parked={!!tour&&tour.step>0} inTour={Boolean(tour)} onDone={tour&&tour.step===0?onTourDone:null}/>
-    {tour&&tour.step>0&&<Walker key={tour.run} pts={tourFlow.paths[0]} color={tourFlow.color} kind={tourFlow.id} onDone={onTourDone}/>}
+    <ArrivingTruck play={tour?'t'+tour.run:'s'+selected} mode={truckMode} onDone={tour&&tour.step===0?onTourDone:null} tourFocusRef={tour?tourFocusRef:null}/>
+    {tour&&tour.step>0&&<Walker key={tour.run} pts={tourFlow.paths[0]} color={tourFlow.color} kind={tourFlow.id} onDone={onTourDone} tourFocusRef={tourFocusRef}/>}
     {[-2,1.5,5,8.5].map(x=><Lamp key={x} at={[x,0,2.9]}/>)}
     {sectors.map((s,i)=>{
       const dz=sel?s.z-sel.z:0, dx=sel?s.x-sel.x:0
@@ -696,7 +868,7 @@ export default function Farm({selected,onSelect,reset,showZones,activeFlows,near
         cut={cutting&&selected===i} hide={cutting&&i!==selected&&dz>0&&Math.abs(dx-.45*dz)<3.2}/>
     })}
     {flows.filter(f=>activeFlows.includes(f.id)).map(f=><Flow key={f.id} {...f}/>)}
-    {[[-9.3,-6.2],[0,-7],[2,-7],[4,-7],[9.5,5.4],[-9.2,4.5],...Array.from({length:40},(_,i)=>[(i%20-10)*2.4,-11-Math.floor(i/20)*3+Math.sin(i)])].map(([x,z],i)=><Tree key={i} at={[x,0,z]} i={i}/>)}
+    {[[-9.3,-6.2],[0,-7],[2,-7],[4,-7],[9.5,5.4],[-9.2,4.5],...Array.from({length:40},(_,i)=>[(i%20-10)*2.4,-11-Math.floor(i/20)*3+Math.sin(i)])].filter(([,z])=>!(rearView&&z<=-6.8)).map(([x,z],i)=><Tree key={i} at={[x,0,z]} i={i}/>)}
     {[[-10.9,-7],[-10.9,-3],[10.9,-4.5],[10.9,2.5],[-6.8,8.6],[9.1,8.7],[9.6,8.7],[-2.4,-8.9],[3.2,-8.9],[8.4,-8.9]].map(([x,z],i)=><Bush key={i} at={[x,0,z]} s={.9+(i%3)*.18}/>)}
     <Gate x={-4.6} active={selected===0} holdOpen={Boolean(tour&&tourFlow?.id==='pessoas')} onSelect={onSelect}/>
   </Canvas></div>

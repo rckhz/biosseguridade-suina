@@ -103,12 +103,23 @@ const legShape=mergeGeometries([
   ...[-1,1].map(side=>oval([side*.034,-.307,.026],[.037,.038,.074],'#936e61'))
 ])
 
-export default function Pig({x,z,phase}){
+export default function Pig({x,z,phase,inPlace=false}){
   const pig=useRef(),head=useRef(),legs=useRef([])
   const angle=useRef(phase),time=useRef(phase*2)
   useFrame((_,delta)=>{
     const dt=Math.min(delta,.06)
     time.current+=dt
+    if(inPlace){
+      pig.current.position.set(x,0,z)
+      pig.current.rotation.y=0
+      head.current.rotation.x=.06*Math.sin(time.current*4)
+      head.current.rotation.y=0
+      head.current.position.y=.59+.012*Math.cos(time.current*18)
+      legs.current.forEach((leg,i)=>{
+        leg.rotation.x=.38*Math.sin(time.current*9+(i===0||i===3?0:Math.PI))
+      })
+      return
+    }
     // A velocidade cai até zero enquanto o animal para para farejar.
     const pace=Math.min(1,Math.max(0,1.4*Math.sin(time.current*.57)+.55))
     angle.current+=dt*.88*pace

@@ -145,10 +145,18 @@ function Delivery(){
     <group position={[2.2,1.85,-1.1]}><Tick g={tick}/></group>
     {/* Caminhão passando pelo rodolúvio (pneus marrons entram sujos e saem pretos desinfetados) */}
     <group ref={truck} position={[-4.1,.03,.35]}>
-      <B at={[-.35,.78,0]} size={[2.0,1.05,1.12]} color="#e8ecea"/>
-      <B at={[-.35,.4,.0]} size={[2.04,.1,1.16]} color="#5a615f"/>
-      <B at={[.95,.64,0]} size={[.75,.82,1.06]} color="#3f6b78"/>
-      <B at={[1.05,.9,.0]} size={[.48,.3,1.08]} color="#b8d6de"/>
+      <B at={[-.35,.86,0]} size={[2.0,1.06,1.12]} color="#e8ecea"/>
+      <B at={[.15,.30,0]} size={[2.7,.12,.96]} color="#5a615f"/>
+      <B at={[1.08,.58,0]} size={[.80,.58,1.08]} color="#3f6b78"/>
+      <B at={[.80,1.06,0]} size={[.24,.40,1.08]} color="#3f6b78"/>
+      <B at={[1.15,1.04,0]} size={[.56,.34,1.02]} color="#b8d6de"/>
+      <B at={[1.44,1.04,0]} size={[.06,.32,.94]} color="#cde4ec"/>
+      <B at={[1.07,1.26,0]} size={[.80,.10,1.08]} color="#355c68"/>
+      <B at={[.86,1.35,0]} size={[.34,.10,.98]} rot={[0,0,-.24]} color="#355c68"/>
+      <B at={[1.49,.54,0]} size={[.04,.28,.70]} color="#283032"/>
+      <B at={[1.49,.28,0]} size={[.10,.12,1.10]} color="#6d7574"/>
+      {[-.36,.36].map(z=><B key={'h'+z} at={[1.49,.49,z]} size={[.05,.09,.14]} color="#ffe9a8"/>)}
+      {[-.60,.60].map(z=><B key={'m'+z} at={[1.34,1.02,z]} size={[.05,.20,.05]} color="#2c3030"/>)}
       {[-.95,-.05,.95].flatMap((wx,i)=>[-.54,.54].map((wz,j)=>{
         const idx=i*2+j
         return <group key={idx} ref={g=>{wheelGroups.current[idx]=g}} position={[wx,.24,wz]}>
@@ -268,12 +276,20 @@ function LoadingRamp(){
     <B at={[-.85,.03,0]} size={[.14,.04,4.8]} color="#e7b93c"/>
     {[-1.8,1.8].map(z=><B key={z} at={[-.85,.65,z]} size={[.12,1.3,1.3]} color="#e9e4d6"/>)}
     <B at={[-2.65,.88,0]} size={[2.2,1.15,1.3]} color="#d9c290"/>
-    <B at={[-3.95,.65,0]} size={[.75,.85,1.2]} color="#3f6b78"/>
+    <B at={[-4.08,.58,0]} size={[.78,.58,1.18]} color="#3f6b78"/>
+    <B at={[-3.82,1.08,0]} size={[.24,.44,1.18]} color="#3f6b78"/>
+    <B at={[-4.14,1.06,0]} size={[.54,.36,1.12]} color="#b8d6de"/>
+    <B at={[-4.42,1.06,0]} size={[.06,.34,1.02]} color="#cde4ec"/>
+    <B at={[-4.07,1.31,0]} size={[.78,.11,1.18]} color="#355c68"/>
+    <B at={[-3.88,1.40,0]} size={[.34,.11,1.06]} rot={[0,0,.24]} color="#355c68"/>
+    <B at={[-4.48,.55,0]} size={[.04,.28,.76]} color="#283032"/>
+    <B at={[-4.48,.28,0]} size={[.10,.12,1.20]} color="#6d7574"/>
+    {[-.38,.38].map(z=><B key={'lh'+z} at={[-4.48,.50,z]} size={[.05,.09,.15]} color="#ffe9a8"/>)}
     {[-3.9,-2.9,-1.9].map(wx=>[-.6,.6].map(wz=><mesh key={wx+'_'+wz} position={[wx,.22,wz]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.22,.22,.12,12]}/><meshStandardMaterial color="#2c3030"/></mesh>))}
     <B at={[.3,.38,0]} size={[2.5,.12,1.15]} rot={[0,0,-.26]} color="#9d9686"/>
     {[-.55,.55].map(z=><B key={z} at={[.3,.72,z]} size={[2.5,.55,.06]} rot={[0,0,-.26]} color="#77857c"/>)}
     <B at={[2.25,.05,0]} size={[1.7,.08,1.2]} color="#cfc6b4"/>
-    <group ref={pigRef} position={[-1.5,.68,0]} rotation={[0,Math.PI/2,0]} scale={.65}><Pig x={0} z={0} phase={.4}/></group>
+    <group ref={pigRef} position={[-1.5,.68,0]} rotation={[0,Math.PI/2,0]} scale={.65}><Pig x={0} z={0} phase={.4} inPlace/></group>
   </group>
 }
 // 07 Quarentena: animais isolados, acompanhamento veterinário e equipamentos exclusivos.

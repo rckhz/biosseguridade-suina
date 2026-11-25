@@ -7,7 +7,7 @@ import Plan2D from './Plan2D'
 import {objective} from './content'
 import {SourceLinks} from './Sources'
 import Interior from './Interiors'
-import {sectors,zones,flows,flowLegend,isBarn,barnKind,tourOrder} from './sectors'
+import {sectors,zones,flows,flowLegend,isBarn,barnKind,tourOrder,tourStages} from './sectors'
 import {sectorIcons} from './icons'
 import {Disease,Practices,Materials,Simulation,Quiz,Refs,EmergencyQuickModal,CompulsoryNotificationModal} from './Learn'
 import './style.css'
@@ -43,12 +43,12 @@ function App(){
 
   const tourFlows=tourOrder.map(id=>flows.find(f=>f.id===id))
   function startTour(step=0,playing=true){
-    setNear(false);setInset(false);setView2d(false)
-    if(!tour){select(-1);setReset(v=>v+1)}
+    setNear(false);setInset(true);setInsetBig(false);setView2d(false)
+    if(!tour) select(-1)
     setTour(t=>({step,run:(t?t.run:0)+1,playing}))
     setActiveFlows(tourOrder.slice(0,step+1))
   }
-  function tourStop(){setTour(null);setActiveFlows([])}
+  function tourStop(){setTour(null);setActiveFlows([]);setInsetBig(false)}
   function tourDone(){
     setTour(t=>t&&t.playing?{...t,waiting:true}:t)
   }
@@ -63,7 +63,10 @@ function App(){
   const anchor=useRef(null)
   const popupRef=useRef(null)
   const linesRef=useRef(null)
-  const showInset=inset&&!(near&&isBarn(selected))&&!view2d&&selected>=0&&!tour
+  const tourSector=tour?tourStages[tourOrder[tour.step]].sector:-1
+  const insetSector=tour?tourSector:selected
+  const insetSectorData=insetSector>=0?sectors[insetSector]:null
+  const showInset=inset&&!view2d&&insetSector>=0&&(tour||!(near&&isBarn(selected)))
   function showOnMap(i){
     selectSector(i)
     document.getElementById('granja').scrollIntoView({block:'start'})
@@ -163,10 +166,10 @@ function App(){
           : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset&&!insetBig} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
         {showInset && <>
           {!insetBig && <svg ref={linesRef} className="callout-lines" aria-hidden="true" style={{opacity:0}}><line/><line/></svg>}
-          <div ref={popupRef} className={'inset'+(insetBig?' big-inset':'')} role="dialog" aria-label={`${sector.short} (por dentro)`}>
-            <div className="inset-view"><Interior i={selected} kind={barnKind(selected)}/></div>
+          <div ref={popupRef} className={'inset'+(insetBig?' big-inset':'')} role="dialog" aria-label={`${insetSectorData.short} (por dentro)`}>
+            <div className="inset-view"><Interior i={insetSector} kind={barnKind(insetSector)}/></div>
             <div className="inset-head">
-              <span className="inset-chip">{sector.short}: por dentro</span>
+              <span className="inset-chip">{insetSectorData.short}: por dentro</span>
               <div className="inset-btns">
                 <button className="inset-x" aria-label={insetBig?'Reduzir janela interna':'Ampliar janela interna'} title={insetBig?'Reduzir':'Ampliar'} onClick={()=>setInsetBig(v=>!v)}>{insetBig?<Minimize2 size={16}/>:<Maximize2 size={16}/>}</button>
                 <button className="inset-x" aria-label="Fechar zoom" title="Fechar" onClick={()=>{setInset(false);setInsetBig(false)}}><X size={18}/></button>
@@ -196,6 +199,7 @@ function App(){
             <button aria-label="Etapa anterior" disabled={tour.step===0} onClick={()=>startTour(tour.step-1,false)}><SkipBack size={18}/></button>
             <button className="tour-play" onClick={()=>tour.playing?setTour(t=>({...t,playing:false,waiting:false})):(tour.end?startTour(0,true):startTour(tour.step,true))}>{tour.playing?<><Pause size={18}/>Pausar</>:<><Play size={18} fill="currentColor"/>{tour.end?'Rever':'Continuar'}</>}</button>
             <button aria-label="Próxima etapa" disabled={tour.step===tourOrder.length-1} onClick={()=>startTour(tour.step+1,false)}><SkipForward size={18}/></button>
+            <button aria-label={inset?'Ocultar cena interna':'Ver cena interna'} title={inset?'Ocultar cena interna':'Ver cena interna'} aria-pressed={inset} className={inset?'on':''} onClick={()=>setInset(v=>!v)}><Eye size={18}/></button>
             <button aria-label="Descrição da etapa" aria-expanded={tourInfo} className={tourInfo?'on':''} onClick={()=>setTourInfo(v=>!v)}><Info size={18}/></button>
           </div>
           {tourInfo && <><p>{tourFlows[tour.step].note}</p>

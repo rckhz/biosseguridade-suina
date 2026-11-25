@@ -90,7 +90,7 @@ export const flows = [
   {id:'pessoas', name:'Pessoas', note:'rua → portaria → registro sanitário → barreira (banho e troca de roupa/botas) → pedilúvio → unidades produtivas', color:'#2f7d62', dash:false,
     paths:[[[-4.6,11.1],[-4.6,5.5],[-3.0,5.5],[0,5.48],[0,2.85],[0,-2.44],[1.8,-2.44],[6.8,-2.44]]]},
   {id:'animais', name:'Animais', note:'origem regularizada com GTA → embarcadouro no perímetro → unidade de quarentena → unidades de produção', color:'#c08a2a', dash:false,
-    paths:[[[1.5,6.9],[1.5,2.4],[-7.6,2.4],[-7.6,-2.6],[-3.0,-2.6]]]},
+    paths:[[[1.5,8.45],[1.5,7.0],[1.5,2.4],[-7.6,2.4],[-7.6,-2.6],[-3.0,-2.6]]]},
   {id:'racao', name:'Ração e insumos', note:'fornecedor → rodolúvio / ponto externo → abastecimento dos silos e depósito → distribuição interna dedicada', color:'#2f7d62', dash:true,
     paths:[[[4.65,8.2],[4.65,5.8],[5.6,5.8],[5.6,1.65]]]},
   {id:'veiculos', name:'Veículos', note:'veículos autorizados passam pelo rodolúvio (fosso desinfetante e arco pulverizador) e permanecem no perímetro externo, sem entrar na área limpa', color:'#c08a2a', dash:true,
@@ -100,3 +100,10 @@ export const flows = [
 ]
 
 export const tourOrder = ['veiculos','racao','pessoas','animais','residuos']
+export const tourStages = {
+  veiculos: {sector: 2, x: -1.2, z: 13.2, zoom: 1.9},
+  racao:    {sector: 10, x: 4.65, z: 7.7, zoom: 1.9},
+  pessoas:  {sector: 4, x: -4.6, z: 10.6, zoom: 2.0},
+  animais:  {sector: 5, x: 3.0, z: 12.9, zoom: 2.0},
+  residuos: {sector: 12, x: -2.0, z: -5.5, zoom: 1.85, orbit: Math.PI},
+}
