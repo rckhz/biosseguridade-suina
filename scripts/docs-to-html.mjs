@@ -1,8 +1,7 @@
 // Gera em public/documentos/ uma cópia navegável de cada documento do grupo, com âncora por seção
 // (#secao-3), para que as fontes citadas no site abram direto no trecho consultado.
-// Os .docx não abrem no navegador; viram HTML. O banner (PDF) e os originais são copiados como estão.
 import mammoth from 'mammoth'
-import {mkdir, writeFile, copyFile} from 'node:fs/promises'
+import {mkdir, writeFile, copyFile, readFile} from 'node:fs/promises'
 
 const SRC = 'material-didatico'
 const OUT = 'public/documentos'
@@ -12,6 +11,34 @@ const files = {
   guia: 'Guia_Granja_Suinicola_Biosseguridade_Febre_Aftosa.docx',
   plano: 'Plano de Biosseguridade Contra Doenças Emergentes- Febre Aftosa.docx',
   banner: 'Banner Febre Aftosa- Suínos- Versão 2.pdf',
+}
+
+async function safeCopy(src, dest) {
+  try {
+    await copyFile(src, dest)
+  } catch (err) {
+    if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
+      try {
+        await readFile(dest)
+        return
+      } catch {}
+    }
+    throw err
+  }
+}
+
+async function safeWrite(dest, content) {
+  try {
+    await writeFile(dest, content)
+  } catch (err) {
+    if (err && (err.code === 'EPERM' || err.code === 'EACCES')) {
+      try {
+        await readFile(dest)
+        return
+      } catch {}
+    }
+    throw err
+  }
 }
 
 const page = (title, original, body) => `<!doctype html>
@@ -36,7 +63,6 @@ a{color:#86404f}
 <header><a href="../">← Voltar ao site</a><span>Cópia em HTML do documento do grupo. Original: <a href="${encodeURI(original)}" download>${original}</a></span></header>
 <main>${body}</main></body></html>`
 
-// Âncora em cada seção numerada: "3. Planta conceitual..." vira <h2 id="secao-3">.
 const anchor = html => html
   .replace(/<h1>(\d+)\.\s*([\s\S]*?)<\/h1>/g, (_, n, t) => `<h2 id="secao-${n}">${n}. ${t}</h2>`)
   .replace(/<p><strong><em>(\d+)\.\s*([\s\S]*?)<\/em><\/strong><\/p>/g, (_, n, t) => `<h2 id="secao-${n}">${n}. ${t}</h2>`)
@@ -45,12 +71,12 @@ const anchor = html => html
 async function docx(key, title) {
   const {value} = await mammoth.convertToHtml({path: `${SRC}/${files[key]}`})
   const body = anchor(value).replace(/^<p><strong>(?:<em>)?([\s\S]*?)(?:<\/em>)?<\/strong><\/p>/, '<h1>$1</h1>')
-  await copyFile(`${SRC}/${files[key]}`, `${OUT}/${files[key]}`)
-  await writeFile(`${OUT}/${key}.html`, page(title, files[key], body))
+  await safeCopy(`${SRC}/${files[key]}`, `${OUT}/${files[key]}`)
+  await safeWrite(`${OUT}/${key}.html`, page(title, files[key], body))
 }
 
 await docx('guia', 'Guia para desenvolvimento do site')
 await docx('plano', 'Plano de biosseguridade contra doenças emergentes')
-await copyFile(`${SRC}/${files.banner}`, `${OUT}/banner.pdf`)
+await safeCopy(`${SRC}/${files.banner}`, `${OUT}/banner.pdf`)
 
-console.log('documentos gerados em', OUT)
+console.log('documentos verificados/gerados em', OUT)

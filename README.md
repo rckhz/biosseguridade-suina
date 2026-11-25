@@ -1,19 +1,20 @@
 # Biosseguridade na Suinocultura
 
-Uma visita virtual a uma granja fictícia para estudar a prevenção da febre aftosa em suínos. A maquete reúne **12 setores**. Ao selecionar um deles, você descobre o que acontece ali, quais cuidados fazem parte da rotina e onde encontrar a explicação no material do grupo. Cada setor tem a sua própria animação na maquete e abre uma janelinha que mostra, por dentro, o processo que acontece no local.
+Ambiente virtual tridimensional e interativo de uma granja suinícola tecnificada fictícia voltado ao ensino da prevenção da **febre aftosa em suínos**. A propriedade reúne **14 instalações** distribuídas em **5 zonas de biosseguridade** (externa, externa/suja, transição, isolamento e interna/limpa). Ao selecionar cada ponto na maquete 3D ou na planta 2D, você visualiza sua função, medidas preventivas, risco sanitário associado e uma cena interna animada.
 
 ![Maquete da granja com a janela do interior da maternidade e a ficha do setor selecionado](docs/imagens/granja.jpg)
 
-## Um roteiro pela granja
+## Roteiro de exploração
 
-1. Selecione **Explorar a propriedade** para começar pelo primeiro setor. Arraste a maquete para girar a câmera e use as setas **←** e **→** para passar de uma ficha à seguinte.
-2. Observe a janelinha do setor: na portaria a cancela sobe para o visitante registrado, na barreira sanitária a pessoa troca de roupa e toma banho, na quarentena os animais ficam em baias separadas. Em maternidade e creche, escolha **Ver por dentro** para abrir o galpão em corte, cada um com o seu modelo.
-3. Selecione o botão ▶ da maquete para ver a **animação passo a passo**: o caminhão chega, a ração segue dali, depois pessoas, animais e resíduos percorrem seus trajetos, uma etapa continuando a anterior.
-4. Abra a **planta 2D** para localizar os setores. Ative **Mostrar zonas** e **Mostrar fluxos** e, na legenda, selecione um percurso por vez para acompanhar a circulação de pessoas, animais, ração, veículos ou resíduos.
+1. Selecione **Explorar a propriedade** para percorrer os 14 setores — da **Portaria** (com placas de acesso restrito), **Rodolúvio**, **Barreira sanitária com pedilúvio** e **Embarcadouro perimetral** até a **Unidade de quarentena**, **Unidade de maternidade**, **Unidade de recria**, **Crescimento e terminação** e o **Escritório sanitário e GTA**. Use as setas **←** e **→** para avançar pelas fichas.
+2. Em **Unidade de maternidade**, **Unidade de recria** e **Crescimento e terminação**, escolha **Ver por dentro** para abrir o galpão em corte na própria maquete.
+3. Acione o botão **▶** para assistir à **animação guiada dos fluxos** (veículos, ração, pessoas, animais e resíduos) ou alterne para a **Planta 2D** e ative **Zonas** e **Fluxos**.
+4. Clique em **Suspeita de febre aftosa: o que fazer?** ou em **Notificar SVO** para consultar o protocolo imediato e simular uma **notificação compulsória ao Serviço Veterinário Oficial**.
 
-## Da visita à simulação
+## Módulos interativos fora do mapa 3D
 
-Em **Materiais Didáticos**, a simulação apresenta uma suspeita de febre aftosa. Você escolhe como agir, lê a explicação e avança para a próxima etapa. O quiz encerra a visita com cinco perguntas e uma revisão das respostas. O banner acadêmico em PDF e os links nas fichas permitem consultar as fontes durante o estudo.
+- **Conheça a Febre Aftosa**: agente etiológico (*Aphthovirus*, família Picornaviridae), diagnóstico e controle estruturados, atualização epidemiológica de **maio de 2025** (reconhecimento do Brasil pela OMSA como país livre sem vacinação), simulador interativo de **vias de transmissão** e **inspeção clínica interativa** no suíno (focinho, cascos, claudicação, febre e miocardite em leitões).
+- **Simule uma Emergência & Quiz**: tomada de decisão em 6 etapas diante de suspeita vesicular, botão de comunicação imediata ao SVO e quiz final com revisão comentada.
 
 ![Simulação de suspeita de febre aftosa com o cenário, as etapas e as opções de resposta](docs/imagens/simulacao.jpg)
 
@@ -28,9 +29,7 @@ npm ci
 npm run dev
 ```
 
-Abra o endereço local que o Vite mostrar no terminal. Para gerar a versão de produção em `dist/`, execute `npm run build`. Os dois comandos também preparam as versões dos documentos que o site exibe no navegador.
-
-A interface foi feita com React e a maquete usa Three.js com React Three Fiber. O conteúdo e as fichas dos setores ficam em [src](src/), e os documentos originais estão em [material-didatico](material-didatico/).
+Abra o endereço local exibido pelo Vite. Para gerar a versão de produção em `dist/`, execute `npm run build`.
 
 ## Créditos
 

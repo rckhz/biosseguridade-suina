@@ -1,25 +1,24 @@
 ﻿import React,{useEffect,useRef,useState} from 'react'
 import {createRoot} from 'react-dom/client'
 import '@fontsource-variable/nunito'
-import {House,Search,CircleHelp,Play,Plus,Minus,Move,X,Info,ArrowRight,CircleCheck,MapPin,Shield,Virus,GraduationCap,Layers,Route,Menu,ChevronLeft,ChevronRight,PiggyBank,ZoomIn,Map as MapIcon,Box as BoxIcon,Target,Pause,SkipForward,SkipBack} from 'lucide-react'
+import {House,Search,CircleHelp,Play,Plus,Minus,Move,X,Info,ArrowRight,CircleCheck,MapPin,Shield,Virus,Siren,Layers,Route,Menu,ChevronLeft,ChevronRight,PiggyBank,Map as MapIcon,Box as BoxIcon,Target,Pause,SkipForward,SkipBack,PhoneCall,AlertTriangle,Maximize2,Minimize2,Eye} from 'lucide-react'
 import Farm from './Farm'
 import Plan2D from './Plan2D'
 import {objective} from './content'
 import {SourceLinks} from './Sources'
-import BarnInterior from './BarnInterior'
 import Interior from './Interiors'
-import {sectors,zones,flows,flowLegend,isBarn,tourOrder} from './sectors'
+import {sectors,zones,flows,flowLegend,isBarn,barnKind,tourOrder} from './sectors'
 import {sectorIcons} from './icons'
-import {Disease,Practices,Materials,Simulation,Quiz,Refs} from './Learn'
+import {Disease,Practices,Materials,Simulation,Quiz,Refs,EmergencyQuickModal,CompulsoryNotificationModal} from './Learn'
 import './style.css'
-import banner from '../material-didatico/Banner Febre Aftosa- Suínos- Versão 2.pdf?url'
 
-const plain=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
+const banner='documentos/banner.pdf'
+const plain=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
 const quick=[
-  [MapPin,'Explore a Granja','Navegue pela estrutura, clique nos pontos e aprenda na prática.','#granja',''],
-  [Shield,'Biosseguridade','Entenda as principais medidas de proteção na suinocultura.','#boas-praticas',''],
-  [Virus,'Febre aftosa','Saiba o que é, como ocorre, os sinais clínicos e como prevenir.','#febre-aftosa','rose'],
-  [GraduationCap,'Materiais Didáticos','Banner, simulação e quiz para aprofundar seus conhecimentos.','#materiais',''],
+  [MapPin,'Explore a Granja','Navegue pelas 14 instalações, zonas e fluxos sanitários.','#granja',''],
+  [Virus,'Conheça a Febre Aftosa','Agente etiológico, vias de transmissão e sinais clínicos interativos.','#febre-aftosa',''],
+  [Shield,'Biosseguridade','Medidas essenciais por setor, da portaria à unidade de recria.','#boas-praticas',''],
+  [Siren,'Simule uma Emergência','Suspeita clínica, notificação compulsória e medidas oficiais.','#simulacao','rose'],
 ]
 
 function App(){
@@ -32,12 +31,16 @@ function App(){
   const [exploring,setExploring]=useState(false)
   const [near,setNear]=useState(q.has('galpao'))
   const [inset,setInset]=useState(true)
+  const [insetBig,setInsetBig]=useState(false)
   const [view2d,setView2d]=useState(q.has('2d'))
   const [showZones,setShowZones]=useState(q.has('zonas'))
   const [activeFlows,setActiveFlows]=useState(q.has('fluxos')?flows.map(f=>f.id):(+q.get('etapa')>=1?tourOrder.slice(0,+q.get('etapa')):[]))
   const [zoomTick,setZoomTick]=useState(null)
   const [tourInfo,setTourInfo]=useState(false)
-  const [tour,setTour]=useState(()=>{const n=+q.get('etapa');return n>=1&&n<=5?{step:n-1,run:1,playing:false}:null}) // {step, run, playing} da animação guiada
+  const [tour,setTour]=useState(()=>{const n=+q.get('etapa');return n>=1&&n<=5?{step:n-1,run:1,playing:false}:null})
+  const [emergOpen,setEmergOpen]=useState(false)
+  const [notifyOpen,setNotifyOpen]=useState(false)
+
   const tourFlows=tourOrder.map(id=>flows.find(f=>f.id===id))
   function startTour(step=0,playing=true){
     setNear(false);setInset(false);setView2d(false)
@@ -54,18 +57,20 @@ function App(){
     const id=setTimeout(()=>{ if(tour.step<tourOrder.length-1) startTour(tour.step+1,true); else setTour(t=>t&&{...t,waiting:false,playing:false,end:true}) },1400)
     return ()=>clearTimeout(id)
   },[tour])
-  const [pop,setPop]=useState(null) // 'busca' | 'ajuda' | 'menu'
+  const [pop,setPop]=useState(null)
   const [term,setTerm]=useState('')
   const searchRef=useRef(null)
   const anchor=useRef(null)
   const popupRef=useRef(null)
   const linesRef=useRef(null)
-  const showInset=inset&&!near&&!view2d&&selected>=0&&!tour
+  const showInset=inset&&!(near&&isBarn(selected))&&!view2d&&selected>=0&&!tour
   function showOnMap(i){
     selectSector(i)
     document.getElementById('granja').scrollIntoView({block:'start'})
   }
-  // Liga o galpão (posição projetada pela cena) aos cantos inferiores da janela de zoom.
+  function goSimulation(){
+    document.getElementById('simulacao').scrollIntoView({block:'start'})
+  }
   anchor.current=(x,y)=>{
     const svg=linesRef.current, box=popupRef.current
     if(!svg||!box) return
@@ -84,48 +89,57 @@ function App(){
   }
   useEffect(()=>{
     const onKey=e=>{
-      if(e.key==='Escape') setPop(null)
+      if(e.key==='Escape'){setPop(null);setEmergOpen(false);setNotifyOpen(false);return}
+      if(emergOpen||notifyOpen) return
       if(e.target.closest('select,input,textarea')) return
       if(e.key==='ArrowRight') selectSector(selected+1)
       if(e.key==='ArrowLeft') selectSector(selected-1)
     }
     window.addEventListener('keydown',onKey)
     return ()=>window.removeEventListener('keydown',onKey)
-  },[selected])
+  },[selected,emergOpen,notifyOpen])
   useEffect(()=>{ if(pop==='busca') searchRef.current?.focus() },[pop])
 
   const toggleFlow=id=>setActiveFlows(f=>f.includes(id)?f.filter(x=>x!==id):[...f,id])
   const flowsOn=activeFlows.length>0
   const sector=sectors[selected]
   const SectorIcon=sectorIcons[selected]
-  const found=sectors.map((s,i)=>[s,i]).filter(([s])=>plain(s.name).includes(plain(term)))
-  const nav=[['#inicio','Início',House],['#granja','Explore a Granja'],['#febre-aftosa','Febre Aftosa'],['#boas-praticas','Boas Práticas'],['#materiais','Materiais Didáticos']]
+  const found=sectors.map((s,i)=>[s,i]).filter(([s])=>plain(s.name+' '+s.short).includes(plain(term)))
+  const nav=[
+    ['#inicio','Início',House],
+    ['#granja','Explore a Granja'],
+    ['#febre-aftosa','Conheça a Febre Aftosa'],
+    ['#boas-praticas','Biosseguridade'],
+    ['#simulacao','Simule uma Emergência'],
+    ['#materiais','Materiais'],
+  ]
 
   return <>
     <a className="skip" href="#granja">Ir para a maquete</a>
     <header id="inicio">
-      <a className="brand" href="#inicio" aria-label="Biosseguridade na Suinocultura, início"><PiggyBank size={44} strokeWidth={1.6}/><span>Biosseguridade na<br/>Suinocultura</span></a>
+      <a className="brand" href="#inicio" aria-label="Biosseguridade na Suinocultura, início"><PiggyBank size={42} strokeWidth={1.6}/><span>Biosseguridade na<br/>Suinocultura</span></a>
       <nav aria-label="Principal" className={pop==='menu'?'open':''}>
-        {nav.map(([href,label,I],k)=><a key={href} href={href} className={k===0?'current':''} aria-current={k===0?'page':undefined} onClick={()=>setPop(null)}>{I && <I size={20}/>}{label}</a>)}
+        {nav.map(([href,label,I])=><a key={href} href={href} onClick={()=>setPop(null)}>{I && <I size={19}/>}{label}</a>)}
       </nav>
       <div className="tools">
+        <button className="hdr-alert" onClick={()=>setNotifyOpen(true)} title="Comunicação imediata ao Serviço Veterinário Oficial"><PhoneCall size={17}/><span>Notificar SVO</span></button>
         <button className="icon-btn" aria-label="Buscar setor" aria-expanded={pop==='busca'} onClick={()=>setPop(pop==='busca'?null:'busca')}><Search size={22}/></button>
         <button className="icon-btn" aria-label="Ajuda" aria-expanded={pop==='ajuda'} onClick={()=>setPop(pop==='ajuda'?null:'ajuda')}><CircleHelp size={22}/></button>
         <button className="icon-btn menu-btn" aria-label={pop==='menu'?'Fechar menu':'Abrir menu'} aria-expanded={pop==='menu'} onClick={()=>setPop(pop==='menu'?null:'menu')}>{pop==='menu'?<X size={22}/>:<Menu size={22}/>}</button>
       </div>
       {pop==='busca' && <div className="popover" role="dialog" aria-label="Buscar setor">
         <label htmlFor="busca" className="sr-only">Nome do setor</label>
-        <input id="busca" ref={searchRef} placeholder="Buscar setor da granja…" value={term} onChange={e=>setTerm(e.target.value)}/>
+        <input id="busca" ref={searchRef} placeholder="Buscar setor (ex.: recria, rodolúvio, GTA)…" value={term} onChange={e=>setTerm(e.target.value)}/>
         <ul>{found.map(([s,i])=>{const I=sectorIcons[i];return <li key={s.name}><button onClick={()=>{selectSector(i);setPop(null);setTerm('');document.getElementById('granja').scrollIntoView({block:'start'})}}><I size={18}/><span>{s.code} · {s.name}</span></button></li>})}
           {!found.length && <li className="none">Nenhum setor com esse nome.</li>}</ul>
       </div>}
       {pop==='ajuda' && <div className="popover help" role="dialog" aria-label="Ajuda">
         <h3>Como explorar</h3>
         <ul>
-          <li><b>Clique</b> num ponto da maquete para abrir a ficha do setor.</li>
+          <li><b>Clique</b> num ponto da maquete para abrir a ficha e a cena do setor.</li>
           <li><b>Arraste</b> para girar, use a <b>rolagem</b> ou + e − para o zoom e o <b>botão direito</b> para mover.</li>
           <li><b>← →</b> no teclado trocam de setor.</li>
-          <li><Layers size={16}/> mostra as zonas e <Route size={16}/> os fluxos de pessoas, animais, ração, veículos e resíduos.</li>
+          <li><Layers size={16}/> exibe as 5 zonas de biosseguridade e <Route size={16}/> os fluxos sanitários.</li>
         </ul>
       </div>}
     </header>
@@ -133,21 +147,30 @@ function App(){
       <section className={'hero'+(selected>=0?' with-panel':'')+(view2d?' is-2d':'')+(tour?' touring':'')} id="granja" aria-label={view2d?'Planta 2D da granja':'Maquete interativa da granja'}>
         <div className={exploring?'hero-copy exploring':'hero-copy'}>
           <h1>Biosseguridade na<br/>Suinocultura</h1>
-          <p>Conheça a estrutura de uma granja, aprenda medidas de biosseguridade e descubra como prevenir a febre aftosa.</p>
-          <button className="cta" onClick={()=>{
-            setExploring(true)
-            selectSector(0)
-          }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
+          <p>Explore uma granja tecnificada em 3D, reconheça vias de transmissão e sinais clínicos da febre aftosa e pratique a conduta diante de uma suspeita sanitária.</p>
+          <div className="hero-actions">
+            <button className="cta" onClick={()=>{
+              setExploring(true)
+              selectSector(0)
+            }}><Play size={20} fill="currentColor"/>Explorar a propriedade</button>
+            <button className="cta secondary-cta" onClick={()=>setEmergOpen(true)}><AlertTriangle size={20}/>Suspeita de febre aftosa: o que fazer?</button>
+          </div>
         </div>
         <div className="stage">
         <div className="scene">{view2d
           ? <div className="plan2d"><Plan2D selected={selected} onSelect={selectSector} showZones={showZones} activeFlows={activeFlows}/></div>
-          : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
+          : <Farm key={reset} selected={selected} onSelect={selectSector} reset={reset} showZones={showZones} activeFlows={activeFlows} near={near} inset={showInset&&!insetBig} onAnchor={anchor} zoomTick={zoomTick} panelOpen={selected>=0&&!tour} tour={tour&&{...tour,flow:tourFlows[tour.step]}} onTourDone={tourDone}/>}</div>
         {showInset && <>
-          <svg ref={linesRef} className="callout-lines" aria-hidden="true" style={{opacity:0}}><line/><line/></svg>
-          <div ref={popupRef} className="inset" role="dialog" aria-label={`${sector.short} (zoom)`}>
-            <div className="inset-view">{isBarn(selected)?<BarnInterior key={selected} kind={selected===6?'maternidade':'creche'} closeUp={false} reset={0}/>:<Interior key={selected} i={selected}/>}</div>
-            <div className="inset-head"><button className="inset-x" aria-label="Fechar zoom" onClick={()=>setInset(false)}><X size={18}/></button></div>
+          {!insetBig && <svg ref={linesRef} className="callout-lines" aria-hidden="true" style={{opacity:0}}><line/><line/></svg>}
+          <div ref={popupRef} className={'inset'+(insetBig?' big-inset':'')} role="dialog" aria-label={`${sector.short} (por dentro)`}>
+            <div className="inset-view"><Interior i={selected} kind={barnKind(selected)}/></div>
+            <div className="inset-head">
+              <span className="inset-chip">{sector.short}: por dentro</span>
+              <div className="inset-btns">
+                <button className="inset-x" aria-label={insetBig?'Reduzir janela interna':'Ampliar janela interna'} title={insetBig?'Reduzir':'Ampliar'} onClick={()=>setInsetBig(v=>!v)}>{insetBig?<Minimize2 size={16}/>:<Maximize2 size={16}/>}</button>
+                <button className="inset-x" aria-label="Fechar zoom" title="Fechar" onClick={()=>{setInset(false);setInsetBig(false)}}><X size={18}/></button>
+              </div>
+            </div>
           </div>
         </>}
         <div className="map-tools" role="group" aria-label="Controles da maquete">
@@ -159,9 +182,10 @@ function App(){
             <button className="solo" aria-label="Restaurar vista" title="Restaurar vista" onClick={()=>{setNear(false);setReset(v=>v+1)}}><Move size={22}/></button>
           </>}
           <button className={'solo'+(view2d?' on':'')} aria-pressed={view2d} aria-label={view2d?'Voltar à maquete 3D':'Ver planta 2D'} title={view2d?'Maquete 3D':'Planta 2D'} onClick={()=>{setNear(false);setView2d(v=>!v)}}>{view2d?<BoxIcon size={22}/>:<MapIcon size={22}/>}</button>
-          <button className={'solo'+(showZones?' on':'')} aria-pressed={showZones} aria-label="Mostrar zonas" title="Zonas" onClick={()=>setShowZones(v=>!v)}><Layers size={22}/></button>
+          <button className={'solo'+(showZones?' on':'')} aria-pressed={showZones} aria-label="Mostrar zonas" title="Zonas de biosseguridade" onClick={()=>setShowZones(v=>!v)}><Layers size={22}/></button>
           <button className={'solo'+(tour?' on':'')} aria-pressed={!!tour} aria-label="Animação guiada dos fluxos" title="Animação passo a passo" onClick={()=>tour?tourStop():startTour(0,true)}><Play size={22}/></button>
-          <button className={'solo'+(flowsOn?' on':'')} aria-pressed={flowsOn} aria-label="Mostrar fluxos" title="Fluxos" onClick={()=>setActiveFlows(flowsOn?[]:flows.map(f=>f.id))}><Route size={22}/></button>
+          <button className={'solo'+(flowsOn?' on':'')} aria-pressed={flowsOn} aria-label="Mostrar fluxos" title="Fluxos sanitários" onClick={()=>setActiveFlows(flowsOn?[]:flows.map(f=>f.id))}><Route size={22}/></button>
+          <button className="solo emerg-tool" aria-label="Suspeita de febre aftosa: o que fazer?" title="Suspeita de febre aftosa: o que fazer?" onClick={()=>setEmergOpen(true)}><AlertTriangle size={22}/></button>
         </div>
         </div>
         {tour && <div className="tour" role="region" aria-label="Animação guiada dos fluxos" aria-live="polite">
@@ -196,14 +220,16 @@ function App(){
             <Virus size={34} className="risk-ico" aria-hidden="true"/>
             <div><div className="risk-top"><h3>Risco sanitário relacionado</h3><a href="#febre-aftosa">Saiba mais <ArrowRight size={16}/></a></div><p>{sector.risk}</p></div>
           </div>
-          <p className="src">Fonte: <SourceLinks text={sector.source}/>. Risco: texto de <SourceLinks text={sector.riskSource}/>; a associação ao setor é do grupo.</p>
+          {!inset && !view2d && !(near&&isBarn(selected)) && <button className="btn ghost full-w" onClick={()=>setInset(true)}><Eye size={18}/>Ver animação por dentro</button>}
+          {selected===13 && <button className="btn danger full-w" onClick={()=>setNotifyOpen(true)}><PhoneCall size={18}/>Notificação compulsória ao SVO</button>}
+          <p className="src">Fonte: <SourceLinks text={sector.source}/>. Risco: <SourceLinks text={sector.riskSource}/>.</p>
           <div className="actions">
             <button className="step" aria-label="Setor anterior" onClick={()=>selectSector(selected-1)}><ChevronLeft size={22}/></button>
             {view2d
               ? <button className="big" onClick={()=>setView2d(false)}><BoxIcon size={22}/><span>Ver na maquete 3D</span></button>
-              : <button className="big" onClick={()=>setNear(v=>!v)}>
+              : <button className="big" onClick={()=>{if(!isBarn(selected)&&!near) setInset(true); setNear(v=>!v)}}>
                 {near?<ArrowRight size={22} style={{transform:'scaleX(-1)'}}/>:<Info size={22}/>}
-                <span>{near?'Vista geral':isBarn(selected)?'Ver por dentro':'Ver de perto'}</span>
+                <span>{near?'Vista geral':isBarn(selected)?'Ver galpão em corte':'Ver de perto'}</span>
               </button>}
             <button className="step" aria-label="Próximo setor" onClick={()=>selectSector(selected+1)}><ChevronRight size={22}/></button>
           </div>
@@ -215,30 +241,38 @@ function App(){
       <section className="block objective" id="objetivo" aria-labelledby="t-obj">
         <div className="block-head"><h2 id="t-obj">Objetivo do trabalho</h2></div>
         <div className="obj-grid">
-          <blockquote><p>{objective.txt}</p><cite>{objective.txtSource}</cite></blockquote>
-          <blockquote><p>{objective.guia}</p><cite><SourceLinks text={objective.guiaSource}/></cite></blockquote>
+          <blockquote>
+            <strong className="obj-title">{objective.proposalTitle}</strong>
+            <p>{objective.proposal}</p>
+          </blockquote>
+          <blockquote>
+            <strong className="obj-title">{objective.purposeTitle}</strong>
+            <p>{objective.purpose}</p>
+          </blockquote>
         </div>
       </section>
       <section className="block tint" id="setores" aria-labelledby="t-set">
-        <div className="block-head"><h2 id="t-set">Os 12 setores da granja</h2><p className="src"><SourceLinks text="Guia, seção 9"/>: “alternativa textual ao mapa”. Conteúdo: <SourceLinks text="Guia, seções 3 e 5"/>.</p></div>
+        <div className="block-head"><h2 id="t-set">Estrutura da granja e zonas de biosseguridade</h2><p className="src"><SourceLinks text="Guia, seção 9"/>: alternativa textual completa ao mapa. Conteúdo baseado em <SourceLinks text="Guia, seções 3 e 5"/> e <SourceLinks text="Plano, seção 4"/>.</p></div>
         <ol className="sector-list">{sectors.map((s,i)=>{const I=sectorIcons[i];return <li key={s.name}><details>
           <summary><span className="n">{s.code}</span><I size={22} aria-hidden="true"/><span className="t"><strong>{s.short}</strong>{s.short!==s.name && <small>{s.name}</small>}</span>{s.zone && <span className="tag"><i style={{background:zones[s.zone].color}}/>{zones[s.zone].name}</span>}</summary>
           <div className="sl-body">
             <p><strong>Localização e função:</strong> {s.role}</p>
             <p><strong>Medidas:</strong></p><ul>{s.measures.map(m=><li key={m}>{m}</li>)}</ul>
             <p><strong>Risco sanitário relacionado:</strong> {s.risk}</p>
-            <p className="src">Fonte: <SourceLinks text={s.source}/>. Risco: texto de <SourceLinks text={s.riskSource}/>; a associação ao setor é do grupo.</p>
+            <p className="src">Fonte: <SourceLinks text={s.source}/>. Risco: <SourceLinks text={s.riskSource}/>.</p>
             <button className="btn ghost" onClick={()=>showOnMap(i)}><Target size={18}/>Ver no mapa</button>
           </div>
         </details></li>})}</ol>
       </section>
-      <Disease/>
-      <Practices/>
+      <Disease onShowSector={showOnMap} onOpenEmergency={()=>setEmergOpen(true)}/>
+      <Practices onShowSector={showOnMap}/>
+      <Simulation onOpenEmergency={()=>setEmergOpen(true)} onOpenNotify={()=>setNotifyOpen(true)}/>
       <Materials banner={banner}/>
-      <Simulation/>
       <Quiz/>
     </main>
-    <Refs/>
+    <Refs onOpenNotify={()=>setNotifyOpen(true)}/>
+    <EmergencyQuickModal open={emergOpen} onClose={()=>setEmergOpen(false)} onOpenNotify={()=>setNotifyOpen(true)} onGoSimulation={goSimulation}/>
+    <CompulsoryNotificationModal open={notifyOpen} onClose={()=>setNotifyOpen(false)}/>
   </>
 }
 createRoot(document.getElementById('root')).render(<App/>)
