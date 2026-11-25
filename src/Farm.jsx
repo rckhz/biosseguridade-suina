@@ -179,21 +179,21 @@ function RodoluvioFx(){
     if(!van.current||!okRing.current) return
     const c=(t.current%8)/8
     const z=c<.34?2.5-(c/.34)*2.5:c<.64?0:-(c-.64)/.36*2.2
-    van.current.position.set(-2.25,c>=.22&&c<=.72?-.03:0,z)
+    van.current.position.set(-2.35,c>=.22&&c<=.72?-.03:0,z)
     van.current.visible=c<.96
     okRing.current.visible=c>.58&&c<.95
     okRing.current.position.z=z
   })
   return <group>
-    <Drops n={16} color="#9ad6f5" at={[-2.25,1.62,0]} h={1.45} spread={.52} speed={1.25}/>
-    <Ripple at={[-2.25,.21,0]} color="#48a9cc" max={.95} period={1.4}/>
-    <group ref={van} position={[-2.25,0,2.5]}>
+    <Drops n={16} color="#9ad6f5" at={[-2.35,1.82,0]} h={1.65} spread={.65} speed={1.25}/>
+    <Ripple at={[-2.35,.21,0]} color="#48a9cc" max={1.05} period={1.4}/>
+    <group ref={van} position={[-2.35,0,2.5]}>
       <Box at={[0,.42,0]} size={[.86,.52,1.45]} color="#e8ecea"/>
       <Box at={[0,.36,-.88]} size={[.82,.42,.52]} color="#3f6b78"/>
       <Box at={[0,.6,-.9]} size={[.76,.22,.46]} color="#b8d6de"/>
       {[-.44,.44].map(x=>[-.82,.45].map(z=><mesh key={x+'_'+z} position={[x,.17,z]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.16,.16,.1,12]}/><meshStandardMaterial color="#262a2a"/></mesh>))}
     </group>
-    <mesh ref={okRing} position={[-2.25,.19,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.62,.78,28]}/><meshBasicMaterial color="#2f7d62" toneMapped={false}/></mesh>
+    <mesh ref={okRing} position={[-2.35,.19,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.62,.78,28]}/><meshBasicMaterial color="#2f7d62" toneMapped={false}/></mesh>
   </group>
 }
 // 04 Recepção e registro
@@ -301,7 +301,7 @@ function SectorFx({i,s}){
     <Grain/>,<Water/>,<Waste w={w}/>,<Sheets/>,
   ][i]||null
 }
-function Building({s,i,selected,onSelect,portal,showZones,cut,hide}) {
+function Building({s,i,selected,onSelect,portal,showZones,cut,hide,tourFlowId}) {
   const {w,d}=s
   const kind = barnKind(i)
   const roof = [2,5,10,12].includes(i) ? '#899595' : i===7 ? '#c4764f' : i===8 ? '#6b8778' : i===9 ? '#5f7482' : '#9a5b48'
@@ -312,6 +312,17 @@ function Building({s,i,selected,onSelect,portal,showZones,cut,hide}) {
     <Box at={[0,.075,0]} size={[w+(showZones?.85:.45),.15,d+(showZones?.85:.45)]} color={pad}/>
     {selected && <Box at={[0,.04,0]} size={[w+1.2,.08,d+1.2]} color="#f3dbe2"/>}
     {selected && !cut && <SectorFx i={i} s={s}/>}
+    {i===2 && tourFlowId==='veiculos' && !(selected&&!cut) && <>
+      <Drops n={18} color="#9ad6f5" at={[-2.35,1.82,0]} h={1.65} spread={.65} speed={1.25}/>
+      <Ripple at={[-2.35,.21,0]} color="#48a9cc" max={1.05} period={1.4}/>
+    </>}
+    {i===4 && tourFlowId==='pessoas' && !(selected&&!cut) && <>
+      <Drops n={12} color="#7fb8e8" at={[0,1.65,0]} h={1.45} spread={.38}/>
+      <Ripple at={[0,.23,d/2+.48]} color="#48a9cc" max={.95} period={1.4}/>
+    </>}
+    {i===8 && tourFlowId==='pessoas' && !(selected&&!cut) &&
+      <Ripple at={[0,.23,d/2+.36]} color="#48a9cc" max={.95} period={1.4}/>
+    }
     <Html portal={portal} position={[0,2.5,0]} center zIndexRange={[5,1]}>
       <button className={'pin'+(selected?' active':'')} aria-label={s.name} aria-pressed={selected} onClick={()=>onSelect(i)}>
         <b><Icon size={19} strokeWidth={2.2}/></b>{selected && <span>{s.short}</span>}
@@ -324,17 +335,17 @@ function Building({s,i,selected,onSelect,portal,showZones,cut,hide}) {
       <Box at={[0,.98,.03]} size={[.7,.13,.02]} color="#b2453a"/>
     </group>}
     {/* 03 Rodolúvio (fosso desinfetante + rampas + arco de pulverização) */}
-    {i===2 && <group position={[-2.25,0,0]}>
-      <Box at={[0,.11,0]} size={[1.55,.07,2.6]} color="#b9b4a6"/>
-      {[-.74,.74].map(x=><Box key={x} at={[x,.2,0]} size={[.1,.16,2.1]} color="#e7b93c"/>)}
-      <Box at={[0,.17,0]} size={[1.36,.05,1.95]} color="#48a9cc"/>
-      {[-.74,.74].map(x=><Box key={'p'+x} at={[x,.92,0]} size={[.09,1.55,.09]} color="#5c6865"/>)}
-      <Box at={[0,1.68,0]} size={[1.58,.1,.12]} color="#5c6865"/>
+    {i===2 && <group position={[-2.35,0,0]}>
+      <Box at={[0,.11,0]} size={[1.86,.07,2.7]} color="#b9b4a6"/>
+      {[-.88,.88].map(x=><Box key={x} at={[x,.2,0]} size={[.1,.16,2.2]} color="#e7b93c"/>)}
+      <Box at={[0,.17,0]} size={[1.66,.05,2.05]} color="#48a9cc"/>
+      {[-.88,.88].map(x=><Box key={'p'+x} at={[x,1.02,0]} size={[.09,1.84,.09]} color="#5c6865"/>)}
+      <Box at={[0,1.9,0]} size={[1.88,.1,.12]} color="#5c6865"/>
     </group>}
     {/* Pedilúvio na porta das unidades produtivas e quarentena */}
     {[6,7,8,9].includes(i) && !cut && <group position={[0,0,d/2+.36]}>
-      <Box at={[0,.165,0]} size={[.82,.055,.46]} color="#e7b93c"/>
-      <Box at={[0,.2,0]} size={[.68,.025,.34]} color="#48a9cc"/>
+      <Box at={[0,.165,0]} size={[1.06,.06,.58]} color="#e7b93c"/>
+      <Box at={[0,.2,0]} size={[.9,.03,.44]} color="#48a9cc"/>
     </group>}
     {/* 11 Silos de ração atrás do depósito */}
     {i===10 && [-.72,.72].map(x=><group key={x} position={[x,0,-1.55]}>
@@ -478,51 +489,166 @@ function Truck({at,turn=0,color='#e8ecea'}){
   </group>
 }
 const PARK=6.4
-function ArrivingTruck({play,parked,onDone}){
-  const ref=useRef(),t=useRef(0),done=useRef(onDone)
+function ArrivingTruck({play,parked,inTour,onDone}){
+  const ref=useRef(),ring=useRef(),t=useRef(0),done=useRef(onDone),fired=useRef(false)
   const {invalidate}=useThree()
   done.current=onDone
   const place=()=>{
-    const e=1-Math.pow(1-t.current,3)
-    ref.current.position.x=-32+(PARK+32)*e
-    ref.current.position.y=t.current>=1?0:Math.sin(t.current*80)*.012*(1-e)
+    if(!ref.current) return
+    if(!inTour){
+      const e=1-Math.pow(1-t.current,3)
+      ref.current.position.set(-32+(PARK+32)*e,t.current>=1?0:Math.sin(t.current*80)*.012*(1-e),12.4)
+      ref.current.rotation.y=0
+      if(ring.current) ring.current.visible=false
+      return
+    }
+    if(parked){
+      ref.current.position.set(4.65,0,8.15)
+      ref.current.rotation.y=Math.PI/2
+      if(ring.current) ring.current.visible=false
+      return
+    }
+    const u=t.current
+    let x,z,rot,y=0
+    if(u<.34){
+      const p=u/.34
+      x=-20+22.65*p
+      z=14.65
+      rot=0
+    }else if(u<.5){
+      const p=(u-.34)/.16, ang=p*Math.PI/2
+      x=2.65+2.0*Math.sin(ang)
+      z=12.65+2.0*Math.cos(ang)
+      rot=ang
+    }else if(u<.88){
+      const p=(u-.5)/.38, e=p*p*(3-2*p)
+      x=4.65
+      z=12.65-4.25*e
+      rot=Math.PI/2
+      if(z>=8.9&&z<=11.4) y=-.04
+    }else{
+      const p=(u-.88)/.12, e=1-Math.pow(1-p,2)
+      x=4.65
+      z=8.4-.25*e
+      rot=Math.PI/2
+    }
+    ref.current.position.set(x,y,z)
+    ref.current.rotation.y=rot
+    if(ring.current) ring.current.visible=u>.72
   }
-  useEffect(()=>{t.current=parked?1:0;place();invalidate()},[play,parked,invalidate])
+  useEffect(()=>{
+    fired.current=false
+    t.current=parked?1:0
+    place()
+    invalidate()
+  },[play,parked,inTour,invalidate])
   useFrame((_,dt)=>{
     if(!ref.current||t.current>=1) return
-    t.current=Math.min(1,t.current+Math.min(dt,.05)/7)
+    t.current=Math.min(1,t.current+Math.min(dt,.05)/(inTour?9:7))
     place()
-    if(t.current>=1&&done.current) done.current()
+    if(t.current>=1&&!fired.current){fired.current=true;if(done.current) done.current()}
     invalidate()
   })
-  return <group ref={ref} position={[-32,0,12.4]}><Truck at={[0,0,0]}/></group>
+  return <group ref={ref} position={[-32,0,12.4]}>
+    <Truck at={[0,0,0]}/>
+    <mesh ref={ring} visible={false} position={[.5,.22,0]} rotation={[-Math.PI/2,0,0]}>
+      <ringGeometry args={[1.85,2.05,36]}/><meshBasicMaterial color="#2f7d62" toneMapped={false} transparent opacity={.9}/>
+    </mesh>
+  </group>
 }
 function Walker({pts,color,kind,onDone}){
-  const ref=useRef(),d=useRef(0),done=useRef(onDone),fired=useRef(false)
+  const ref=useRef(),bodyGroup=useRef(),torso=useRef(),legL=useRef(),legR=useRef(),bootL=useRef(),bootR=useRef(),splash=useRef()
+  const elapsed=useRef(0),done=useRef(onDone),fired=useRef(false)
   const {invalidate}=useThree()
   done.current=onDone
   const segs=pts.slice(1).map((p,i)=>({a:pts[i],len:Math.hypot(p[0]-pts[i][0],p[1]-pts[i][1]),b:p}))
   const total=segs.reduce((n,s)=>n+s.len,0)
+  const isPerson=kind==='pessoas'
+  const speed=isPerson?3.8:3.4
+  const dEntryPed=isPerson&&segs.length>3?segs.slice(0,3).reduce((n,s)=>n+s.len,0):0
+  const dCleanPed=isPerson&&segs.length>4?dEntryPed+segs[3].len:0
+  const dBarreira=isPerson?(dEntryPed+dCleanPed)*.5:0
+  const dBarnPed=isPerson&&segs.length>6?dCleanPed+segs[4].len+segs[5].len:0
+  const pEntry=isPerson?.6:0, pBar=isPerson?.5:0, pBarnPed=isPerson?1.5:0
+  const t1=dEntryPed/speed, t1End=t1+pEntry
+  const t2=t1End+(dBarreira-dEntryPed)/speed, t2End=t2+pBar
+  const t3=t2End+(dBarnPed-dBarreira)/speed, t3End=t3+pBarnPed
+  const tEnd=total/speed+pEntry+pBar+pBarnPed
   useFrame((_,dt)=>{
     if(!ref.current) return
-    if(d.current<total) d.current=Math.min(total,d.current+Math.min(dt,.05)*3.4)
-    let left=d.current,sg=segs[segs.length-1],k=1
+    if(elapsed.current<tEnd) elapsed.current=Math.min(tEnd,elapsed.current+Math.min(dt,.05))
+    const te=elapsed.current
+    let d,walking=te<tEnd,inEntry=false,inBarreira=false,inBarnPed=false,pedPhase=0
+    if(!isPerson){
+      d=Math.min(total,te*speed)
+    }else if(te<t1){
+      d=te*speed
+    }else if(te<t1End){
+      d=dEntryPed;walking=false;inEntry=true;pedPhase=(te-t1)/pEntry
+    }else if(te<t2){
+      d=dEntryPed+(te-t1End)*speed
+    }else if(te<t2End){
+      d=dBarreira;walking=false;inBarreira=true
+    }else if(te<t3){
+      d=dBarreira+(te-t2End)*speed
+    }else if(te<t3End){
+      d=dBarnPed;walking=false;inBarnPed=true;pedPhase=(te-t3)/pBarnPed
+    }else{
+      d=Math.min(total,dBarnPed+(te-t3End)*speed)
+    }
+    let left=d,sg=segs[segs.length-1],k=1
     for(const s of segs){ if(left<=s.len){sg=s;k=s.len?left/s.len:1;break} left-=s.len }
     ref.current.position.set(sg.a[0]+(sg.b[0]-sg.a[0])*k,0,sg.a[1]+(sg.b[1]-sg.a[1])*k)
     ref.current.rotation.y=Math.atan2(-(sg.b[1]-sg.a[1]),sg.b[0]-sg.a[0])
-    ref.current.children[0].position.y=Math.abs(Math.sin(d.current*5))*.05*(d.current<total?1:0)
-    if(d.current>=total&&!fired.current){fired.current=true;done.current&&done.current()}
-    else if(d.current<total) invalidate()
+    if(isPerson&&bodyGroup.current){
+      const dip=inBarnPed?-.02+Math.abs(Math.sin(pedPhase*Math.PI*3))*.04:0
+      bodyGroup.current.position.y=inBarreira?0:walking?Math.abs(Math.sin(d*5))*.05:dip
+      const swing=walking?Math.sin(d*5)*.32:0
+      if(legL.current) legL.current.rotation.z=swing
+      if(legR.current) legR.current.rotation.z=-swing
+      const changed=te>=t2+pBar*.5
+      const sanitized=te>=t3+pBarnPed*.35
+      if(torso.current) torso.current.material.color.set(changed?'#f4f1ea':'#7e8380')
+      const bootColor=sanitized?'#1f7a5a':changed?'#358f6e':'#6b4c35'
+      if(bootL.current) bootL.current.material.color.set(bootColor)
+      if(bootR.current) bootR.current.material.color.set(bootColor)
+      const nearEndPed=d>total-.6&&te<tEnd
+      if(splash.current){
+        const showSplash=inEntry||inBarnPed||nearEndPed
+        splash.current.visible=showSplash
+        if(showSplash){
+          const sp=inEntry?(pedPhase*1.5)%1:inBarnPed?(pedPhase*2.5)%1:((total-d)/.6*1.5)%1
+          splash.current.scale.setScalar(.45+sp*.85)
+          splash.current.material.opacity=.9*(1-sp)
+        }
+      }
+    }else if(ref.current.children[0]){
+      ref.current.children[0].position.y=Math.abs(Math.sin(d*5))*.05*(walking?1:0)
+    }
+    if(te>=tEnd&&!fired.current){fired.current=true;done.current&&done.current()}
+    else if(te<tEnd) invalidate()
   })
-  const body=kind==='pessoas'
-    ? <><mesh position={[0,.42,0]} castShadow><capsuleGeometry args={[.17,.4,4,10]}/><meshStandardMaterial color="#f4f1ea"/></mesh><mesh position={[0,.92,0]} castShadow><sphereGeometry args={[.15,12,10]}/><meshStandardMaterial color="#e8b99a"/></mesh></>
+  const body=isPerson
+    ? <group ref={bodyGroup}>
+        <mesh ref={torso} position={[0,.56,0]} castShadow><capsuleGeometry args={[.16,.34,4,10]}/><meshStandardMaterial color="#7e8380"/></mesh>
+        <mesh position={[0,1.02,0]} castShadow><sphereGeometry args={[.145,12,10]}/><meshStandardMaterial color="#e8b99a"/></mesh>
+        <group ref={legL} position={[0,.34,-.09]}>
+          <Box at={[0,-.1,0]} size={[.1,.2,.1]} color="#4a4e52"/>
+          <mesh ref={bootL} position={[.03,-.24,0]} castShadow><boxGeometry args={[.2,.14,.12]}/><meshStandardMaterial color="#6b4c35"/></mesh>
+        </group>
+        <group ref={legR} position={[0,.34,.09]}>
+          <Box at={[0,-.1,0]} size={[.1,.2,.1]} color="#4a4e52"/>
+          <mesh ref={bootR} position={[.03,-.24,0]} castShadow><boxGeometry args={[.2,.14,.12]}/><meshStandardMaterial color="#6b4c35"/></mesh>
+        </group>
+      </group>
     : kind==='animais'
-    ? <><mesh position={[0,.34,0]} scale={[1.3,.8,.8]} castShadow><sphereGeometry args={[.38,14,10]}/><meshStandardMaterial color="#f2c4af"/></mesh><mesh position={[.4,.38,0]} castShadow><sphereGeometry args={[.2,12,10]}/><meshStandardMaterial color="#eeaf99"/></mesh></>
-    : <Box at={[0,.4,0]} size={[.6,.5,.6]} color={kind==='residuos'?'#8a8f8c':'#c9a45c'}/>
-  return <group ref={ref} position={[pts[0][0],0,pts[0][1]]}><group>
+    ? <group><mesh position={[0,.34,0]} scale={[1.3,.8,.8]} castShadow><sphereGeometry args={[.38,14,10]}/><meshStandardMaterial color="#f2c4af"/></mesh><mesh position={[.4,.38,0]} castShadow><sphereGeometry args={[.2,12,10]}/><meshStandardMaterial color="#eeaf99"/></mesh></group>
+    : <group><Box at={[0,.4,0]} size={[.6,.5,.6]} color={kind==='residuos'?'#8a8f8c':'#c9a45c'}/></group>
+  return <group ref={ref} position={[pts[0][0],0,pts[0][1]]}>
     {body}
+    {isPerson && <mesh ref={splash} visible={false} position={[0,.23,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.35,.52,28]}/><meshBasicMaterial color="#48a9cc" transparent toneMapped={false}/></mesh>}
     <mesh position={[0,.03,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.5,.68,28]}/><meshBasicMaterial color={color} toneMapped={false} transparent opacity={.85}/></mesh>
-  </group></group>
+  </group>
 }
 function Lamp({at}){
   return <group position={at}><Box at={[0,.9,0]} size={[.07,1.8,.07]} color="#58625f"/><Box at={[0,.07,0]} size={[.22,.14,.22]} color="#6c7572"/><Box at={[.1,1.82,0]} size={[.3,.05,.05]} color="#58625f"/><mesh position={[.22,1.78,0]}><sphereGeometry args={[.14,12,10]}/><meshBasicMaterial color="#ffe9a8"/></mesh></group>
@@ -554,23 +680,24 @@ export default function Farm({selected,onSelect,reset,showZones,activeFlows,near
     <Tracker target={inset?sel:null} onAnchor={onAnchor}/>
     <hemisphereLight args={['#fff6e2','#7d8c55',1.6]}/><directionalLight position={[4,15,8]} intensity={2.4} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-left={-15} shadow-camera-right={15} shadow-camera-top={15} shadow-camera-bottom={-15}/>
     <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[180,180]}/><meshStandardMaterial map={grass}/></mesh>
-    {/* Cercamento perimetral conectado ao portão e ao embarcadouro */}
+    {/* Cercamento perimetral conectado ao portão, embarcadouro e passagem de serviço do rodolúvio */}
     <Fence at={[0,0,-8.2]} length={21}/><Fence at={[10.5,0,-.2]} length={16} turn={Math.PI/2}/><Fence at={[-10.5,0,-.2]} length={16} turn={Math.PI/2}/>
-    <Fence at={[-8.35,0,7.8]} length={4.3}/><Fence at={[-1.35,0,7.8]} length={3.3}/><Fence at={[6.6,0,7.8]} length={7.8}/>
+    <Fence at={[-8.35,0,7.8]} length={4.3}/><Fence at={[-1.35,0,7.8]} length={3.3}/><Fence at={[3.175,0,7.8]} length={.95}/><Fence at={[8.075,0,7.8]} length={4.85}/>
     <Box at={[0,.025,13.63]} size={[100,.04,4.6]} color="#5d625c"/>
     {Array.from({length:26},(_,i)=><Box key={i} at={[(i-13)*3,.053,13.63]} size={[1,.015,.06]} color="#f1ead0"/>)}
     <Box at={[0,.06,2.0]} size={[20,.06,1.15]} color="#d9cdb3"/><Box at={[-4.6,.06,1.3]} size={[1.6,.07,19.8]} color="#d9cdb3"/>
-    <ArrivingTruck play={tour?'t'+tour.run:selected===2?'e':'i'} parked={!!tour&&tour.step>0} onDone={tour&&tour.step===0?onTourDone:null}/>
+    <Box at={[4.65,.04,11.1]} size={[1.85,.05,1.8]} color="#cfc6b4"/><Box at={[4.65,.04,7.2]} size={[1.85,.05,2.4]} color="#cfc6b4"/>
+    <ArrivingTruck play={tour?'t'+tour.run:selected===2?'e':'i'} parked={!!tour&&tour.step>0} inTour={Boolean(tour)} onDone={tour&&tour.step===0?onTourDone:null}/>
     {tour&&tour.step>0&&<Walker key={tour.run} pts={tourFlow.paths[0]} color={tourFlow.color} kind={tourFlow.id} onDone={onTourDone}/>}
     {[-2,1.5,5,8.5].map(x=><Lamp key={x} at={[x,0,2.9]}/>)}
     {sectors.map((s,i)=>{
       const dz=sel?s.z-sel.z:0, dx=sel?s.x-sel.x:0
-      return <Building key={s.name} {...{s,i,onSelect,portal,showZones}} selected={selected===i}
+      return <Building key={s.name} {...{s,i,onSelect,portal,showZones}} selected={selected===i} tourFlowId={tourFlow?.id}
         cut={cutting&&selected===i} hide={cutting&&i!==selected&&dz>0&&Math.abs(dx-.45*dz)<3.2}/>
     })}
     {flows.filter(f=>activeFlows.includes(f.id)).map(f=><Flow key={f.id} {...f}/>)}
     {[[-9.3,-6.2],[0,-7],[2,-7],[4,-7],[9.5,5.4],[-9.2,4.5],...Array.from({length:40},(_,i)=>[(i%20-10)*2.4,-11-Math.floor(i/20)*3+Math.sin(i)])].map(([x,z],i)=><Tree key={i} at={[x,0,z]} i={i}/>)}
-    {[[-10.9,-7],[-10.9,-3],[10.9,-4.5],[10.9,2.5],[-6.8,8.6],[5.5,8.7],[9.6,8.7],[-2.4,-8.9],[3.2,-8.9],[8.4,-8.9]].map(([x,z],i)=><Bush key={i} at={[x,0,z]} s={.9+(i%3)*.18}/>)}
+    {[[-10.9,-7],[-10.9,-3],[10.9,-4.5],[10.9,2.5],[-6.8,8.6],[9.1,8.7],[9.6,8.7],[-2.4,-8.9],[3.2,-8.9],[8.4,-8.9]].map(([x,z],i)=><Bush key={i} at={[x,0,z]} s={.9+(i%3)*.18}/>)}
     <Gate x={-4.6} active={selected===0} holdOpen={Boolean(tour&&tourFlow?.id==='pessoas')} onSelect={onSelect}/>
   </Canvas></div>
 }

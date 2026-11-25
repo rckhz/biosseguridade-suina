@@ -87,14 +87,14 @@ export const isBarn = i => barnKind(i) !== null
 
 export const flowLegend = 'Verde: percurso controlado · Amarelo: pontos de verificação · Vermelho: rotas de resíduo / alto risco.'
 export const flows = [
-  {id:'pessoas', name:'Pessoas', note:'rua → portaria → registro sanitário → barreira (banho, roupa/botas e pedilúvio) → unidades autorizadas → saída controlada', color:'#2f7d62', dash:false,
-    paths:[[[-4.6,11.1],[-4.6,5.5],[0,5.5],[0,-2.25],[6.8,-2.25]]]},
+  {id:'pessoas', name:'Pessoas', note:'rua → portaria → registro sanitário → barreira (banho e troca de roupa/botas) → pedilúvio → unidades produtivas', color:'#2f7d62', dash:false,
+    paths:[[[-4.6,11.1],[-4.6,5.5],[-3.0,5.5],[0,5.48],[0,2.85],[0,-2.44],[1.8,-2.44],[6.8,-2.44]]]},
   {id:'animais', name:'Animais', note:'origem regularizada com GTA → embarcadouro no perímetro → unidade de quarentena → unidades de produção', color:'#c08a2a', dash:false,
     paths:[[[1.5,6.9],[1.5,2.4],[-7.6,2.4],[-7.6,-2.6],[-3.0,-2.6]]]},
   {id:'racao', name:'Ração e insumos', note:'fornecedor → rodolúvio / ponto externo → abastecimento dos silos e depósito → distribuição interna dedicada', color:'#2f7d62', dash:true,
-    paths:[[[7.0,8.7],[7.0,5.8],[5.6,5.8],[5.6,1.65]]]},
-  {id:'veiculos', name:'Veículos', note:'restritos ao estacionamento externo, rodolúvio e rampa perimetral, evitando entrar na área limpa', color:'#c08a2a', dash:true,
-    paths:[[[-12.5,11.05],[-8.3,11.05],[-8.3,10.55]],[[-1.0,11.05],[1.5,11.05],[1.5,8.75]],[[12.5,11.05],[7.0,11.05],[7.0,10.45]]]},
+    paths:[[[4.65,8.2],[4.65,5.8],[5.6,5.8],[5.6,1.65]]]},
+  {id:'veiculos', name:'Veículos', note:'veículos autorizados passam pelo rodolúvio (fosso desinfetante e arco pulverizador) e permanecem no perímetro externo, sem entrar na área limpa', color:'#c08a2a', dash:true,
+    paths:[[[-12.5,11.05],[-8.3,11.05],[-8.3,10.55]],[[-1.0,11.05],[1.5,11.05],[1.5,8.75]],[[12.5,11.05],[4.65,11.05],[4.65,8.3]]]},
   {id:'residuos', name:'Resíduos', note:'unidades produtivas → área isolada de resíduos e mortos → coleta externa sem cruzar com a área limpa', color:'#b2453a', dash:false,
     paths:[[[-3.0,-5.5],[8.2,-5.5],[8.2,-6.2]]]},
 ]

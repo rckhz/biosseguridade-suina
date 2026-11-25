@@ -23,9 +23,18 @@ export default function Plan2D({selected,onSelect,showZones,activeFlows}){
     <rect x="-5.4" y="-8.6" width="1.6" height="19.8" fill="#d9cdb3"/>
     <rect x="-10" y="1.45" width="20" height="1.15" fill="#d9cdb3"/>
     <g stroke="#f4f1e8" strokeWidth=".16" fill="none" strokeLinecap="round">
-      <polyline points={`2.7,${FRONT} 10.5,${FRONT} 10.5,-8.2 -10.5,-8.2 -10.5,${FRONT}`}/>
+      <polyline points={`5.65,${FRONT} 10.5,${FRONT} 10.5,-8.2 -10.5,-8.2 -10.5,${FRONT}`}/>
       <line x1="-10.5" y1={FRONT} x2="-6.2" y2={FRONT}/>
       <line x1="-3.0" y1={FRONT} x2="0.3" y2={FRONT}/>
+      <line x1="2.7" y1={FRONT} x2="3.65" y2={FRONT}/>
+    </g>
+    <g pointerEvents="none">
+      <rect x={4.65-.93} y={9.6-1.1} width={1.86} height={2.2} rx=".1" fill="#e7b93c" stroke="#8d8a7e" strokeWidth=".05"/>
+      <rect x={4.65-.78} y={9.6-.98} width={1.56} height={1.96} rx=".06" fill="#48a9cc"/>
+      {[5.48,2.85].map(pz=><g key={pz}>
+        <rect x={-.48} y={pz-.34} width={.96} height={.68} rx=".06" fill="#e7b93c" stroke="#8d8a7e" strokeWidth=".04"/>
+        <rect x={-.38} y={pz-.24} width={.76} height={.48} rx=".04" fill="#48a9cc"/>
+      </g>)}
     </g>
     <text x="-4.6" y={FRONT+.8} className="plan-note" textAnchor="middle">portão</text>
     {sectors.map((s,i)=>{

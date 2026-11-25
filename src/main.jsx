@@ -83,6 +83,7 @@ function App(){
   }
 
   function selectSector(index){
+    if(index>=0 && tour) tourStop()
     setNear(false)
     setInset(true)
     select(index<0?-1:(index+sectors.length)%sectors.length)

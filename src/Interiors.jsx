@@ -91,19 +91,23 @@ function Parking(){
 }
 // 03 Rodolúvio e controle de veículos: imersão completa dos pneus no fosso desinfetante + arco pulverizador.
 function Delivery(){
-  const t=useT(),truck=useRef(),wheels=useRef([]),ripA=useRef(),ripB=useRef(),tick=useRef()
+  const t=useT(),truck=useRef(),wheels=useRef([]),wheelGroups=useRef([]),prevX=useRef(-4.1),ripA=useRef(),ripB=useRef(),tick=useRef()
   useFrame(()=>{
     if(!truck.current||!ripA.current||!ripB.current||!tick.current) return
     const c=(t.current%11)/11
     const x=c<.34?lerp(-4.1,-.15,ease(ph(c,0,.34))):c<.66?lerp(-.15,.35,ph(c,.34,.66)):lerp(.35,4.1,ease(ph(c,.66,.96)))
+    const dx=x-prevX.current
+    prevX.current=x
+    const step=Math.abs(dx)>2?0:dx
     const inPool=x>-1.55&&x<1.75
     const clean=x>.05
     truck.current.visible=c<.97
     truck.current.position.set(x,inPool?-.05:.03,.35)
+    wheelGroups.current.forEach(g=>{
+      if(g) g.rotation.z-=step/.24
+    })
     wheels.current.forEach(w=>{
-      if(!w) return
-      w.rotation.z-=0.07
-      w.material.color.set(clean?'#222628':'#75563b')
+      if(w) w.material.color.set(clean?'#222628':'#75563b')
     })
     ;[ripA,ripB].forEach((r,k)=>{
       r.current.visible=inPool
@@ -147,9 +151,15 @@ function Delivery(){
       <B at={[1.05,.9,.0]} size={[.48,.3,1.08]} color="#b8d6de"/>
       {[-.95,-.05,.95].flatMap((wx,i)=>[-.54,.54].map((wz,j)=>{
         const idx=i*2+j
-        return <mesh key={idx} ref={m=>{wheels.current[idx]=m}} position={[wx,.24,wz]} rotation={[Math.PI/2,0,0]}>
-          <cylinderGeometry args={[.24,.24,.14,14]}/><meshStandardMaterial color="#75563b"/>
-        </mesh>
+        return <group key={idx} ref={g=>{wheelGroups.current[idx]=g}} position={[wx,.24,wz]}>
+          <mesh ref={m=>{wheels.current[idx]=m}} rotation={[Math.PI/2,0,0]} castShadow>
+            <cylinderGeometry args={[.24,.24,.14,16]}/><meshStandardMaterial color="#75563b"/>
+          </mesh>
+          <mesh position={[0,0,wz>0?.075:-.075]} rotation={[Math.PI/2,0,0]}>
+            <cylinderGeometry args={[.11,.11,.02,12]}/><meshStandardMaterial color="#b9c0be"/>
+          </mesh>
+          <B at={[0,0,wz>0?.09:-.09]} size={[.18,.035,.015]} color="#4a504e"/>
+        </group>
       }))}
     </group>
   </group>
