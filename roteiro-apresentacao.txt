@@ -1,0 +1,30 @@
+ROTEIRO: APRESENTANDO O SITE (cerca de 3 minutos)
+
+1. ABERTURA (15 s)
+"Este site é uma granja de porcos virtual, que você explora pelo navegador. Ele ensina como evitar que a febre aftosa entre numa criação de suínos."
+
+2. O MAPA DA GRANJA (40 s)
+"Aqui está a granja em 3D. Dá para girar, aproximar e clicar em cada construção. São 14 setores, como a portaria, o rodolúvio, a quarentena e a maternidade. Ao clicar em um setor, aparece para que ele serve, que cuidados exige e qual risco evita. Alguns setores também mostram uma animação de como é lá dentro."
+(Mostrar: clicar na Portaria e depois em Maternidade -> "Ver por dentro")
+
+3. AS ZONAS E OS CAMINHOS (30 s)
+"A granja é dividida em 5 zonas, da área de fora, considerada 'suja', até a área de dentro, 'limpa'. Este botão ▶ mostra por onde passam caminhões, ração, pessoas, animais e resíduos. A regra é simples: nada entra na área limpa sem passar por uma barreira."
+(Mostrar: botão ▶ ou Planta 2D com Zonas e Fluxos)
+
+4. A DOENÇA (30 s)
+"Nesta parte explicamos a febre aftosa: o que é, quais sinais aparecem no porco e como ela se espalha. No simulador, você escolhe uma forma de contágio e vê o vírus passar ou ser barrado, dependendo de a granja ter ou não proteção."
+(Mostrar: alternar "Sem biosseguridade" e "Com barreira ativa")
+
+5. EMERGÊNCIA E QUIZ (30 s)
+"E se aparecer um animal suspeito? A simulação mostra, passo a passo, o que fazer, inclusive avisar o Serviço Veterinário Oficial, que é obrigatório. No final, um quiz testa o que você aprendeu."
+
+6. COMO FOI FEITO: AS TECNOLOGIAS (30 s)
+"Para quem tem curiosidade sobre a parte técnica:
+- React monta as telas e os botões do site, como peças de Lego.
+- Three.js, junto com o React Three Fiber, desenha a granja em 3D dentro do navegador, sem instalar nada.
+- Vite junta tudo e deixa o site rápido para abrir.
+- GitHub guarda o código e o histórico de cada mudança.
+Funciona no computador e no celular."
+
+7. FECHAMENTO (10 s)
+"Todo o conteúdo vem do nosso plano de biosseguridade e do banner do trabalho. O site é uma forma prática de ver como prevenir a aftosa na granja."
