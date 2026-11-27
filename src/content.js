@@ -29,7 +29,7 @@ export const transmissionRoutes = [
     label: 'Animais infectados',
     origin: 'Suínos de reposição em incubação ou contato com outros biungulados',
     entry: 'Ingresso sem conferência sanitária ou mistura direta com lotes residentes',
-    impact: 'Transmissão rápida focinho a focinho entre baias, atingindo todo o plantel susceptível.',
+    impact: 'Transmissão horizontal.',
     barrier: 'Aquisição apenas com GTA, desembarque no perímetro e isolamento obrigatório na Unidade de quarentena.',
     sectorIndex: 6,
     sectorLabel: '07 · Unidade de quarentena',

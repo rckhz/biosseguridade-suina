@@ -8,6 +8,15 @@ function Head({title,id,children}){
 }
 
 // Modal/painel educativo de Notificação Compulsória imediata ao Serviço Veterinário Oficial
+function wrapLabel(txt,max){
+  const lines=[];let cur=''
+  for(const w of txt.split(' ')){
+    if(cur&&(cur+' '+w).length>max){lines.push(cur);cur=w}else cur=cur?cur+' '+w:w
+  }
+  if(cur)lines.push(cur)
+  return lines
+}
+
 export function CompulsoryNotificationModal({open,onClose}){
   const [unit,setUnit]=useState('Unidade de crescimento e terminação — Lote 04')
   const [signsPicked,setSignsPicked]=useState(['Claudicação intensa no lote','Vesículas no focinho e nos cascos'])
@@ -134,9 +143,9 @@ function TransmissionInteractive({onShowSector}){
         <line x1="192" y1="64" x2="254" y2="64" stroke="#b2453a" strokeWidth="4" strokeDasharray="7 5"/>
 
         <rect x="254" y="14" width="176" height="100" rx="14" fill={protectedMode?'#e2f0e8':'#f6e4e0'} stroke={protectedMode?'#2f7d62':'#b2453a'} strokeWidth="2"/>
-        <text x="342" y="46" textAnchor="middle" className="r-kicker">{protectedMode?'BARREIRA SANITÁRIA':'FALHA DE CONTROLE'}</text>
-        <text x="342" y="70" textAnchor="middle" className="r-title">{protectedMode?'Vírus bloqueado':'Passagem livre'}</text>
-        <text x="342" y="92" textAnchor="middle" className="r-sub">{protectedMode?route.sectorLabel:'Sem barreira efetiva'}</text>
+        <text x="342" y="38" textAnchor="middle" className="r-kicker">{protectedMode?'BARREIRA SANITÁRIA':'FALHA DE CONTROLE'}</text>
+        <text x="342" y="60" textAnchor="middle" className="r-title">{protectedMode?'Vírus bloqueado':'Passagem livre'}</text>
+        <text x="342" y="81" textAnchor="middle" className="r-sub">{wrapLabel(protectedMode?route.sectorLabel:'Sem barreira efetiva',22).map((ln,k)=><tspan key={k} x="342" dy={k?17:0}>{ln}</tspan>)}</text>
 
         <line x1="430" y1="64" x2="492" y2="64" stroke={protectedMode?'#2f7d62':'#b2453a'} strokeWidth="4" strokeDasharray={protectedMode?'2 8':'none'} opacity={protectedMode?.45:1}/>
 

@@ -1,6 +1,7 @@
 ﻿import React,{useEffect,useRef,useState} from 'react'
 import {createRoot} from 'react-dom/client'
 import '@fontsource-variable/nunito'
+import '@fontsource-variable/nunito/wght-italic.css'
 import {House,Search,CircleHelp,Play,Plus,Minus,Move,X,Info,ArrowRight,CircleCheck,MapPin,Shield,Virus,Siren,Layers,Route,Menu,ChevronLeft,ChevronRight,PiggyBank,Map as MapIcon,Box as BoxIcon,Target,Pause,SkipForward,SkipBack,PhoneCall,AlertTriangle,Maximize2,Minimize2,Eye} from 'lucide-react'
 import Farm from './Farm'
 import Plan2D from './Plan2D'
